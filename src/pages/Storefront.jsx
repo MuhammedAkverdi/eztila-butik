@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { authFetch } from '../lib/auth-fetch';
 import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
+import { getSupabaseClient } from '../lib/supabase';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const WA_LINK = 'https://wa.me/905078195264?text=Merhaba%20Eztila%20Butik%2C%20yard%C4%B1m%20almak%20istiyorum.';
@@ -86,6 +87,13 @@ export default function Storefront() {
       if (data.account) setAccount(data.account);
     }).catch(() => setNotice('Ürünler şu anda yüklenemedi. Lütfen kısa süre sonra tekrar deneyin.'))
       .finally(() => setLoading(false));
+
+    getSupabaseClient().then(async (sb) => {
+      const { data } = await sb.auth.getUser();
+      if (data?.user) {
+        setAccount((prev) => prev || { email: data.user.email, fullName: data.user.user_metadata?.full_name || 'Hesabım' });
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

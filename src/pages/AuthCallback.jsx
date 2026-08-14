@@ -131,15 +131,15 @@ export default function AuthCallback() {
           console.warn('[AuthCallback] No session user found after all checks.');
           if (isMounted) {
             setStatus('error');
-            setMessage('Doğrulama bağlantısı geçersiz veya süresi dolmuş.');
-            setDetailedError('Oturum oluşturulamadı. Lütfen giriş yapmayı tekrar deneyin.');
+            setMessage('Giriş doğrulanamadı. Supabase oturumu bulunamadı.');
+            setDetailedError('Kod değişimi tamamlanamadı veya oturum anahtarı alınamadı.');
           }
         }
       } catch (err) {
         console.error('[AuthCallback] Fatal error:', err);
         if (isMounted) {
           setStatus('error');
-          setMessage(err?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+          setMessage(err?.message || 'Giriş işlemi sırasında bir hata oluştu.');
           setDetailedError(err?.message || String(err));
         }
       }
