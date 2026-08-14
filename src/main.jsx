@@ -18,7 +18,12 @@ window.fetch = async (...args) => {
       return { ok: true, status: 200, json: async () => ({ store: STORE_CONFIG }) };
     }
     if (url === '/api/account') {
-      return { ok: true, status: 200, json: async () => ({ fullName: '', email: '', phone: '', addresses: [], orders: [] }) };
+      return { ok: true, status: 200, json: async () => ({ 
+        customer: { fullName: '', email: 'demo@eztila.com', phone: '' }, 
+        addresses: [], 
+        orders: [],
+        paymentMethods: [] 
+      }) };
     }
     if (url === '/api/account/orders') {
       return { ok: true, status: 200, json: async () => ({ orders: [] }) };
