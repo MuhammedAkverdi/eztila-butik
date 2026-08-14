@@ -439,14 +439,22 @@ export default function Storefront() {
             {cartItems.length > 0 && (
               <div className="cart-summary">
                 <div className="cart-calc-rows">
-                  <div>
-                    <span>Ara toplam</span>
-                    <strong>{fmt.format(rawSubtotalCents / 100)}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                    <span style={{ color: '#666', fontWeight: '500' }}>Ara toplam</span>
+                    <strong style={{ color: '#1a2a47' }}>{fmt.format(rawSubtotalCents / 100)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '1.2rem', borderBottom: '1px solid #eee' }}>
+                    <span style={{ color: '#666', fontWeight: '500' }}>Kargo</span>
+                    <strong style={{ color: '#1a2a47' }}>{shippingFee === 0 ? 'Ücretsiz' : fmt.format(shippingFee / 100)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                    <span style={{ color: '#1a2a47' }}>Toplam</span>
+                    <strong style={{ color: '#1a2a47' }}>{fmt.format(finalTotalCents / 100)}</strong>
                   </div>
                 </div>
 
-                <a className="button button-primary" style={{ marginTop: '1.5rem', display: 'block', textAlign: 'center' }} href="/sepetim">
-                  Satın Al →
+                <a style={{ display: 'block', backgroundColor: '#1a2a47', color: '#fff', textAlign: 'center', padding: '1rem', fontWeight: 'bold', textDecoration: 'none', letterSpacing: '0.5px' }} href="/sepetim">
+                  SATIN AL →
                 </a>
               </div>
             )}

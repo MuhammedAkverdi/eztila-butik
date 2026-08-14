@@ -243,7 +243,20 @@ export default function ProductDetail() {
     }, 800);
   }
 
+  const cartItems = useMemo(() =>
+    cart.map((item) => ({ ...item, product: allProducts.find((p) => p.id === item.productId) || (item.productId === product?.id ? product : null) })).filter((i) => i.product),
+    [cart, allProducts, product]
+  );
+
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const rawSubtotalCents = cartItems.reduce((sum, item) =>
+    sum + (item.product?.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product?.priceCents || 0) * item.quantity, 0);
+
+  const freeThreshold = 150000;
+  const standardShippingFee = 7900;
+  const shippingFee = (rawSubtotalCents >= freeThreshold || rawSubtotalCents === 0) ? 0 : standardShippingFee;
+  const finalTotalCents = rawSubtotalCents + shippingFee;
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
   const waContactNumber = '905078195264';
@@ -559,14 +572,22 @@ export default function ProductDetail() {
             {cartItems.length > 0 && (
               <div className="cart-summary">
                 <div className="cart-calc-rows">
-                  <div>
-                    <span>Ara toplam</span>
-                    <strong>{fmt.format(rawSubtotalCents / 100)}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                    <span style={{ color: '#666', fontWeight: '500' }}>Ara toplam</span>
+                    <strong style={{ color: '#1a2a47' }}>{fmt.format(rawSubtotalCents / 100)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '1.2rem', borderBottom: '1px solid #eee' }}>
+                    <span style={{ color: '#666', fontWeight: '500' }}>Kargo</span>
+                    <strong style={{ color: '#1a2a47' }}>{shippingFee === 0 ? 'Ücretsiz' : fmt.format(shippingFee / 100)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                    <span style={{ color: '#1a2a47' }}>Toplam</span>
+                    <strong style={{ color: '#1a2a47' }}>{fmt.format(finalTotalCents / 100)}</strong>
                   </div>
                 </div>
 
-                <a className="button button-primary" style={{ marginTop: '1.5rem', display: 'block', textAlign: 'center' }} href="/sepetim">
-                  Satın Al →
+                <a style={{ display: 'block', backgroundColor: '#1a2a47', color: '#fff', textAlign: 'center', padding: '1rem', fontWeight: 'bold', textDecoration: 'none', letterSpacing: '0.5px' }} href="/sepetim">
+                  SATIN AL →
                 </a>
               </div>
             )}
