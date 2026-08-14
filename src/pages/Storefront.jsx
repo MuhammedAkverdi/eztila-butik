@@ -60,6 +60,7 @@ export default function Storefront() {
   const [sort, setSort] = useState('featured');
   const [cart, setCart] = useState([]);
   const [cartReady, setCartReady] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [notice, setNotice] = useState('');
@@ -104,7 +105,7 @@ export default function Storefront() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('openCart') === 'true') {
-      window.location.assign('/sepetim');
+      setCartOpen(true);
     }
 
     return () => cancelAnimationFrame(raf);
@@ -113,6 +114,13 @@ export default function Storefront() {
   useEffect(() => {
     if (cartReady) localStorage.setItem('eztila-cart', JSON.stringify(cart));
   }, [cart, cartReady]);
+
+  function updateQty(productId, variantLabel, qty) {
+    setCart((prev) => qty < 1
+      ? prev.filter((i) => !(i.productId === productId && i.variantLabel === variantLabel))
+      : prev.map((i) => i.productId === productId && i.variantLabel === variantLabel ? { ...i, quantity: Math.min(10, qty) } : i)
+    );
+  }
 
   function toggleFavorite(product) {
     setFavorites((prev) => {
@@ -193,7 +201,7 @@ export default function Storefront() {
       if (idx >= 0) return prev.map((item, i) => i === idx ? { ...item, quantity: Math.min(10, item.quantity + 1) } : item);
       return [...prev, { productId: product.id, quantity: 1, variantLabel }];
     });
-    window.location.assign('/sepetim');
+    setCartOpen(true);
   }
 
   function updateQty(productId, variantLabel, qty) {
@@ -233,11 +241,11 @@ export default function Storefront() {
             <span className="account-link-icon" aria-hidden="true"><UserIcon /></span>
             <span className="account-link-text">{account ? 'Hesabım' : 'Giriş / Üye ol'}</span>
           </a>
-          <a className="cart-button" href="/sepetim" aria-label={`Sepetim, ${cartCount} ürün`}>
+          <button className="cart-button" onClick={() => setCartOpen(true)} aria-label={`Sepetim, ${cartCount} ürün`}>
             <span className="cart-btn-icon"><BagIcon /></span>
             <span className="cart-btn-label">Sepet</span>
             <b>{cartCount}</b>
-          </a>
+          </button>
         </div>
       </header>
 
@@ -391,6 +399,60 @@ export default function Storefront() {
           <span>© 2026 Eztila Butik · <a href="/admin">Yönetim</a></span>
         </div>
       </footer>
+
+      {/* CART DRAWER */}
+      {cartOpen && (
+        <div className="overlay" onMouseDown={() => setCartOpen(false)}>
+          <aside className="cart-drawer" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="drawer-head">
+              <div>
+                <small>EZTİLA</small>
+                <h2>Sepetim ({cartCount})</h2>
+              </div>
+              <button type="button" onClick={() => setCartOpen(false)}>×</button>
+            </div>
+            
+            <div className="cart-lines">
+              {cartItems.length ? cartItems.map((item) => (
+                <article key={`${item.productId}-${item.variantLabel}`}>
+                  <img src={item.product?.imageUrl || LOGO} alt="" />
+                  <div>
+                    <h3>{item.product?.name}</h3>
+                    <span>{item.variantLabel}</span>
+                    <strong>{fmt.format((item.product?.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product?.priceCents || 0) / 100)}</strong>
+                    <div className="qty">
+                      <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity - 1)}>−</button>
+                      <b>{item.quantity}</b>
+                      <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity + 1)}>+</button>
+                    </div>
+                  </div>
+                </article>
+              )) : (
+                <div className="cart-empty">
+                  <span>♡</span>
+                  <h3>Sepetin henüz boş.</h3>
+                  <button onClick={() => setCartOpen(false)}>Alışverişe dön</button>
+                </div>
+              )}
+            </div>
+
+            {cartItems.length > 0 && (
+              <div className="cart-summary">
+                <div className="cart-calc-rows">
+                  <div>
+                    <span>Ara toplam</span>
+                    <strong>{fmt.format(rawSubtotalCents / 100)}</strong>
+                  </div>
+                </div>
+
+                <a className="button button-primary" style={{ marginTop: '1.5rem', display: 'block', textAlign: 'center' }} href="/sepetim">
+                  Satın Al →
+                </a>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       <a className="floating-whatsapp" href={WA_LINK} target="_blank" rel="noreferrer" aria-label="WhatsApp Destek Hattı">
         <WhatsAppIcon />
