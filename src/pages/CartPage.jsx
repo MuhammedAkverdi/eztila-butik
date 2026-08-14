@@ -194,10 +194,6 @@ export default function CartPage() {
               </div>
             )}
           </div>
-          
-          <div className="cp-add-image">
-            <button><ImageIcon /> Resim Ekle</button>
-          </div>
         </div>
 
         {/* RIGHT COLUMN: Order Summary */}
