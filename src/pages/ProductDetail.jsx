@@ -17,6 +17,7 @@ import {
 } from '../lib/catalog-stock';
 import { getNextGalleryIndex, getProductGalleryImages } from '../lib/product-gallery';
 import ProductReviews from '../components/ProductReviews';
+import MobileNavigation from '../components/MobileNavigation';
 import { getAccountOverview } from '../services/account-service';
 import { getCatalogProductBySlug, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
@@ -111,6 +112,15 @@ export default function ProductDetail() {
   // Share state
   const [shareFeedback, setShareFeedback] = useState('');
   const galleryImages = useMemo(() => getProductGalleryImages(product, LOGO), [product]);
+  const mobileCategories = useMemo(() => {
+    const bySlug = new Map();
+    allProducts.forEach((item) => {
+      if (item.categorySlug && !bySlug.has(item.categorySlug)) {
+        bySlug.set(item.categorySlug, { name: item.category, slug: item.categorySlug });
+      }
+    });
+    return [...bySlug.values()];
+  }, [allProducts]);
 
   useEffect(() => {
     Promise.all([
@@ -268,6 +278,7 @@ export default function ProductDetail() {
     return (
       <main className="detail-shell">
         <header className="store-header">
+          <MobileNavigation />
           <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         </header>
         <div style={{ textAlign: 'center', padding: '6rem 1rem', color: '#10204f' }}>
@@ -281,6 +292,7 @@ export default function ProductDetail() {
     return (
       <main className="detail-shell">
         <header className="store-header">
+          <MobileNavigation />
           <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         </header>
         <div className="empty-state">
@@ -310,6 +322,15 @@ export default function ProductDetail() {
       </div>
 
       <header className="store-header">
+        <MobileNavigation
+          categories={mobileCategories}
+          cartCount={cartCount}
+          favoriteCount={favorites.length}
+          accountHref={account ? '/hesabim' : '/giris'}
+          accountLabel={account ? 'Hesabım' : 'Giriş / Üye Ol'}
+          onCartOpen={() => setCartOpen(true)}
+          whatsappUrl={waProductLink}
+        />
         <a className="store-logo" href="/" aria-label="Eztila Butik Ana Sayfa">
           <img src={LOGO} alt="Eztila Butik" />
         </a>

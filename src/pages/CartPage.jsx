@@ -8,6 +8,7 @@ import {
   setCartItemQuantity,
 } from '../lib/cart-catalog';
 import { getCatalogProducts, getStoreConfig } from '../services/catalog-service';
+import MobileNavigation from '../components/MobileNavigation';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
@@ -81,6 +82,19 @@ export default function CartPage() {
   }, []);
 
   const cartItems = useMemo(() => hydrateCartItems(cart, products), [cart, products]);
+  const mobileCategories = useMemo(() => {
+    const bySlug = new Map();
+    products.forEach((product) => {
+      if (product.categorySlug && !bySlug.has(product.categorySlug)) {
+        bySlug.set(product.categorySlug, { name: product.category, slug: product.categorySlug });
+      }
+    });
+    return [...bySlug.values()];
+  }, [products]);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const whatsappUrl = storeConfig?.whatsappNumber
+    ? `https://wa.me/${storeConfig.whatsappNumber}?text=Merhaba%20Eztila%20Butik%2C%20yard%C4%B1m%20almak%20istiyorum.`
+    : null;
 
   const updateQty = (item, newQty) => {
     const result = setCartItemQuantity(cart, products, item, newQty);
@@ -143,6 +157,7 @@ export default function CartPage() {
   return (
     <div className="cartpage-shell">
       <header className="store-header">
+        <MobileNavigation categories={mobileCategories} cartCount={cartCount} whatsappUrl={whatsappUrl} />
         <a className="store-logo" href="/" aria-label="Eztila Butik Ana Sayfa">
           <img src={LOGO} alt="Eztila Butik" />
         </a>
@@ -190,19 +205,23 @@ export default function CartPage() {
                           </div>
                         </td>
                         <td className="cp-td-qty">
+                          <span className="cp-mobile-label">Adet</span>
                           <div className="cp-qty-controls">
-                            <button onClick={() => updateQty(item, item.quantity - 1)}>-</button>
+                            <button onClick={() => updateQty(item, item.quantity - 1)} aria-label={`${item.product.name} adedini azalt`}>-</button>
                             <span>{item.quantity}</span>
                             <button
                               onClick={() => updateQty(item, item.quantity + 1)}
                               disabled={!item.isAvailable || item.quantity >= item.stock}
+                              aria-label={`${item.product.name} adedini artır`}
                             >+</button>
                           </div>
                         </td>
                         <td className="cp-td-price">
+                          <span className="cp-mobile-label">Birim fiyat</span>
                           {fmt.format(price / 100)}
                         </td>
                         <td className="cp-td-total">
+                          <span className="cp-mobile-label">Toplam</span>
                           {fmt.format((price * item.quantity) / 100)}
                         </td>
                         <td className="cp-td-action">

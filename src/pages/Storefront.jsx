@@ -21,6 +21,7 @@ import {
 } from '../lib/catalog-discovery';
 import { getAccountOverview } from '../services/account-service';
 import { getCatalogCategories, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
+import MobileNavigation from '../components/MobileNavigation';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const HERO_IMG = 'https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/f5595db0-5fe4-4b29-b14c-3da73997399c/image_1080.webp';
@@ -216,6 +217,12 @@ export default function Storefront() {
     if (params.get('openCart') === 'true') {
       setCartOpen(true);
     }
+    if (params.get('focusSearch') === 'true') {
+      requestAnimationFrame(() => {
+        document.querySelector('#koleksiyon')?.scrollIntoView();
+        document.querySelector('#search')?.focus();
+      });
+    }
 
     return () => cancelAnimationFrame(raf);
   }, []);
@@ -367,6 +374,11 @@ export default function Storefront() {
     setNotice(result.error);
   }
 
+  function focusProductSearch() {
+    document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
+    requestAnimationFrame(() => document.querySelector('#search')?.focus());
+  }
+
   return (
     <main className="shop-shell">
       <div className="announcement">
@@ -376,6 +388,20 @@ export default function Storefront() {
       </div>
 
       <header className="store-header">
+        <MobileNavigation
+          categories={categoryOptions}
+          cartCount={cartCount}
+          favoriteCount={favorites.length}
+          accountHref={account ? '/hesabim' : '/giris'}
+          accountLabel={account ? 'Hesabım' : 'Giriş / Üye Ol'}
+          onCategorySelect={(selectedCategory) => {
+            setCategory(selectedCategory.name);
+            document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onSearch={focusProductSearch}
+          onCartOpen={() => setCartOpen(true)}
+          whatsappUrl={whatsappLink}
+        />
         <a className="store-logo" href="#top" aria-label="Eztila Butik Ana Sayfa">
           <img src={LOGO} alt="Eztila Butik" />
         </a>
@@ -386,7 +412,7 @@ export default function Storefront() {
           <a href="/siparis-takip">Sipariş takip</a>
         </nav>
         <div className="header-tools">
-          <button className="icon-button" onClick={() => document.querySelector('#search')?.focus()} aria-label="Ürün ara">
+          <button className="icon-button" onClick={focusProductSearch} aria-label="Ürün ara">
             <SearchIcon />
           </button>
           <a className="icon-button fav-header-btn" href="/hesabim" aria-label={`Favorilerim (${favorites.length})`}>

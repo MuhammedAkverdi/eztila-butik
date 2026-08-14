@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import MobileNavigation from '../components/MobileNavigation';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
+const WHATSAPP_URL = 'https://wa.me/905078195264?text=Merhaba%20Eztila%20Butik%2C%20sipari%C5%9Fim%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.';
 
 export default function TrackingPage() {
   const [params] = useSearchParams();
@@ -17,6 +19,7 @@ export default function TrackingPage() {
   return (
     <main className="tracking-shell">
       <header className="store-header">
+        <MobileNavigation whatsappUrl={WHATSAPP_URL} />
         <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         <nav aria-label="Ana menü">
           <a href="/#koleksiyon">Yeni sezon</a>
@@ -52,7 +55,7 @@ export default function TrackingPage() {
             <p>{notice}</p>
             <a
               className="button button-primary"
-              href="https://wa.me/905078195264?text=Merhaba%20Eztila%20Butik%2C%20sipari%C5%9Fim%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noreferrer"
             >

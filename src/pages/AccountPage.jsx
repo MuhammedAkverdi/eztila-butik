@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSupabaseClient } from '../lib/supabase';
+import MobileNavigation from '../components/MobileNavigation';
 import { PROMO_COUPONS } from '../lib/coupons';
 import { getAccountOverview } from '../services/account-service';
 
@@ -169,6 +170,12 @@ export default function AccountPage() {
   return (
     <main className="member-shell">
       <header className="store-header member-header">
+        <MobileNavigation
+          favoriteCount={favorites.length}
+          accountHref="/hesabim"
+          accountLabel="Hesabım"
+          onSignOut={handleSignout}
+        />
         <a className="store-logo" href="/" aria-label="Eztila Butik Ana Sayfa">
           <img src={LOGO} alt="Eztila Butik" />
         </a>
