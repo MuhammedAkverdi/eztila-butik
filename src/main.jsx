@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { MOCK_PRODUCTS, STORE_CONFIG } from './lib/mock-data';
+import { getSupabaseClient } from './lib/supabase';
 
 // --- Interceptor to bypass broken external APIs and Vercel proxies ---
 const originalFetch = window.fetch;
@@ -26,8 +27,14 @@ window.fetch = async (...args) => {
     }
     if (url === '/api/account') {
       if (!hasAuth) return { ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) };
+      
+      const supabase = await getSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email || 'demo@eztila.com';
+      const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+      
       return { ok: true, status: 200, json: async () => ({ 
-        customer: { fullName: '', email: 'demo@eztila.com', phone: '' }, 
+        customer: { fullName, email, phone: '' }, 
         addresses: [], 
         orders: [],
         paymentMethods: [] 
