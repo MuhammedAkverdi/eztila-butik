@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { authFetch } from '../lib/auth-fetch';
 import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
+import {
+  getCartReconciliationMessage,
+  hasBlockingCartStockIssue,
+  hydrateCartItems,
+  reconcileCartItems,
+} from '../lib/cart-catalog';
+import { getAccountOverview } from '../services/account-service';
+import { getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
@@ -9,7 +16,10 @@ export default function CheckoutPage() {
   const [account, setAccount] = useState(null);
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
+  const [storeConfig, setStoreConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [stockNotice, setStockNotice] = useState('');
   
   // Steps
   const [step, setStep] = useState(1); // 1 = Address, 2 = Payment
@@ -32,27 +42,26 @@ export default function CheckoutPage() {
     differentInvoiceAddress: false
   });
 
-  // Card form (PCI-DSS compliant UI mockup)
-  const [cardForm, setCardForm] = useState({
-    cardHolder: '',
-    cardNumber: '',
-    expireMonth: '12',
-    expireYear: '2028',
-    cvv: '',
-  });
-
-  // Agreements
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [orderComplete, setOrderComplete] = useState(null);
-
   useEffect(() => {
     Promise.all([
-      fetch('/api/products').then(r => r.json()).catch(() => ({ products: [] })),
-      authFetch('/api/account').then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([pData, aData]) => {
-      setProducts(pData.products || []);
+      getCatalogProducts(),
+      getStoreConfig(),
+      getAccountOverview().catch(() => null),
+    ]).then(([catalogProducts, config, aData]) => {
+      setProducts(catalogProducts);
+      setStoreConfig(config);
+      setLoadError(false);
+      try {
+        const savedCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
+        const reconciled = reconcileCartItems(savedCart, catalogProducts);
+        setCart(reconciled.items);
+        if (reconciled.changed) {
+          localStorage.setItem('eztila-cart', JSON.stringify(reconciled.items));
+        }
+        setStockNotice(getCartReconciliationMessage(reconciled.issues));
+      } catch {
+        setCart([]);
+      }
       if (aData) {
         setAccount(aData);
         if (aData.addresses?.length > 0) {
@@ -76,25 +85,19 @@ export default function CheckoutPage() {
           }));
         }
       }
+    }).catch(() => {
+      setLoadError(true);
     }).finally(() => {
-      try {
-        const savedCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-        setCart(savedCart);
-      } catch {
-        setCart([]);
-      }
       setLoading(false);
     });
   }, []);
 
-  const cartItems = useMemo(() =>
-    cart.map((item) => ({ ...item, product: products.find((p) => p.id === item.productId) })).filter((i) => i.product),
-  [cart, products]);
+  const cartItems = useMemo(() => hydrateCartItems(cart, products), [cart, products]);
 
   const subtotalCents = cartItems.reduce((sum, item) => {
-    const vPrice = item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents;
-    return sum + vPrice * item.quantity;
+    return sum + (item.isQuantityValid ? item.variant.priceCents * item.quantity : 0);
   }, 0);
+  const hasStockIssue = hasBlockingCartStockIssue(cartItems);
 
   const currentCouponResult = useMemo(() => {
     if (!appliedCoupon) return null;
@@ -103,7 +106,9 @@ export default function CheckoutPage() {
 
   const discountCents = currentCouponResult?.valid ? currentCouponResult.discountCents : 0;
   const isCouponFreeShipping = currentCouponResult?.valid && currentCouponResult.isFreeShipping;
-  const shippingCents = (subtotalCents >= 150000 || subtotalCents === 0 || isCouponFreeShipping) ? 0 : 7900;
+  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? Number.POSITIVE_INFINITY;
+  const standardShippingFee = storeConfig?.shippingFeeCents ?? 0;
+  const shippingCents = (subtotalCents >= freeThreshold || subtotalCents === 0 || isCouponFreeShipping) ? 0 : standardShippingFee;
   const totalCents = Math.max(0, subtotalCents - discountCents) + shippingCents;
 
   function handleApplyCoupon(e) {
@@ -126,74 +131,16 @@ export default function CheckoutPage() {
     setCouponFeedback(null);
   }
 
-  async function handleCompleteOrder(e) {
-    e.preventDefault();
-    if (!agreedToTerms) {
-      setErrorMsg('Lütfen Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi\'ni onaylayınız.');
-      return;
-    }
-    if (cardForm.cardNumber.replace(/\s/g, '').length < 16 || cardForm.cvv.length < 3) {
-      setErrorMsg('Lütfen geçerli kart numarası ve güvenlik kodunu (CVV) eksiksiz yazınız.');
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMsg('');
-
-    try {
-      const orderNumber = `EZT-${Date.now().toString().slice(-6)}`;
-      const payload = {
-        orderNumber,
-        items: cartItems.map((i) => ({
-          productId: i.productId,
-          productName: i.product.name,
-          variant: i.variantLabel,
-          quantity: i.quantity,
-          priceCents: i.product.priceCents,
-        })),
-        shippingAddress: `${shippingForm.fullName}, ${shippingForm.neighborhood ? shippingForm.neighborhood + ', ' : ''}${shippingForm.address} ${shippingForm.district}/${shippingForm.city}`,
-        phone: shippingForm.phone,
-        email: shippingForm.email,
-        subtotalCents,
-        discountCents,
-        appliedCoupon: appliedCoupon?.code || null,
-        totalCents,
-        shippingCents,
-        paymentStatus: 'paid',
-        createdAt: new Date().toISOString(),
-      };
-
-      try {
-        await authFetch('/api/account/orders', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch {
-        // Fallback for guest checkout
-      }
-
-      localStorage.removeItem('eztila-cart');
-      saveActiveCoupon(null);
-      setCart([]);
-      setOrderComplete(payload);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Sipariş oluşturulamadı. Lütfen tekrar deneyiniz.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   if (loading) {
     return <main className="checkout-loading"><span>Yükleniyor...</span></main>;
   }
 
-  if (orderComplete) {
+  if (loadError) {
     return (
-      <main className="payment-result" style={{textAlign: 'center', padding: '5rem 1rem'}}>
-        <h1 style={{fontSize: '2rem', marginBottom: '1rem'}}>Siparişiniz İçin Teşekkürler!</h1>
-        <p><strong>{orderComplete.orderNumber}</strong> numaralı siparişiniz başarıyla alındı.</p>
-        <p style={{margin: '2rem 0'}}><a href="/" className="button">Alışverişe Devam Et</a></p>
+      <main className="checkout-empty" style={{ textAlign: 'center', padding: '5rem 1rem' }}>
+        <h1>Sepet ve mağaza bilgileri şu anda yüklenemiyor.</h1>
+        <p>Lütfen kısa süre sonra tekrar deneyin.</p>
+        <a className="button" href="/" style={{ marginTop: '2rem', display: 'inline-block' }}>Ana Sayfaya Dön →</a>
       </main>
     );
   }
@@ -218,7 +165,7 @@ export default function CheckoutPage() {
           </div>
           <div className="co-step-divider"></div>
           <div className={`co-step ${step >= 2 ? 'active' : ''}`} onClick={() => {
-            if(shippingForm.fullName && shippingForm.address) setStep(2);
+            if (!hasStockIssue && shippingForm.fullName && shippingForm.address) setStep(2);
           }}>
             <div className="co-step-num">2</div>
             <span>Ödeme</span>
@@ -233,6 +180,19 @@ export default function CheckoutPage() {
           
           {step === 1 && (
             <div className="co-step-box">
+              <div className="co-payment-notice" role="status">
+                <strong>Online ödeme şu anda kapalıdır.</strong>
+                <span>Bu sayfa sipariş oluşturmaz ve kart bilgisi istemez.</span>
+              </div>
+
+              {(stockNotice || hasStockIssue) && (
+                <div className="co-stock-warning" role="alert">
+                  <strong>Sepet stok kontrolü gerekli.</strong>
+                  <span>{stockNotice || 'Stokta olmayan ürünü sepetinizden kaldırın.'}</span>
+                  <a href="/sepetim">Sepeti düzenle →</a>
+                </div>
+              )}
+
               {!account && (
                 <div className="co-login-prompt">
                   Zaten hesabınız var mı? <a href="/giris?next=/odeme">Giriş Yap</a>
@@ -244,16 +204,19 @@ export default function CheckoutPage() {
                   <span className="co-tab-num">1</span> Adres Bilgileri
                 </div>
                 <div className="co-tab inactive">
-                  <span className="co-tab-num">2</span> Ödeme Bilgileri
+                  <span className="co-tab-num">2</span> Ödeme Durumu
                 </div>
               </div>
 
               <div className="co-address-wrapper">
                 <div className="co-address-head">
-                  <span>📍 Yeni Adres Ekle</span>
+                  <span>📍 Teslimat Bilgileri</span>
                 </div>
                 
-                <form className="co-address-form" onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
+                <form className="co-address-form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!hasStockIssue) setStep(2);
+                }}>
                   <div className="co-form-grid">
                     <label>
                       <span className="co-label">Fatura Türü</span>
@@ -303,7 +266,7 @@ export default function CheckoutPage() {
                     <span>Faturamın farklı bir adrese düzenlenmesini istiyorum</span>
                   </label>
                   
-                  <button type="submit" className="co-submit-btn">ADRESİ KAYDET</button>
+                  <button type="submit" className="co-submit-btn" disabled={hasStockIssue}>DEVAM ET</button>
                 </form>
               </div>
             </div>
@@ -311,65 +274,20 @@ export default function CheckoutPage() {
 
           {step === 2 && (
             <div className="co-step-box">
-              
               <div className="co-payment-head">
-                <h2>Kartla Güvenli Ödeme</h2>
-                <p>Ödeme bilgileriniz güvenli şifreleme altyapısıyla korunur.</p>
+                <h2>Online Ödeme Yakında</h2>
+                <p>Ödeme altyapımızı güvenli şekilde hazırlıyoruz.</p>
               </div>
 
-              <form className="co-payment-form" onSubmit={handleCompleteOrder}>
-                {errorMsg && <div className="co-error">{errorMsg}</div>}
-                
-                <div className="co-form-grid">
-                  <label className="co-full-width">
-                    <span className="co-label-dark">KART ÜZERİNDEKİ İSİM</span>
-                    <input required type="text" placeholder="KART SAHİBİNİN ADI" value={cardForm.cardHolder} onChange={e => setCardForm({...cardForm, cardHolder: e.target.value})} />
-                  </label>
-                  <label className="co-full-width">
-                    <span className="co-label-dark">KART NUMARASI</span>
-                    <input required type="text" placeholder="0000 0000 0000 0000" maxLength="19" value={cardForm.cardNumber} onChange={e => {
-                      const v = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                      setCardForm({...cardForm, cardNumber: v});
-                    }} />
-                  </label>
-                  <label>
-                    <span className="co-label-dark">SON KULLANMA AYI</span>
-                    <select value={cardForm.expireMonth} onChange={e => setCardForm({...cardForm, expireMonth: e.target.value})}>
-                      {Array.from({length: 12}).map((_,i) => {
-                        const m = String(i+1).padStart(2,'0');
-                        return <option key={m} value={m}>{m}</option>;
-                      })}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="co-label-dark">SON KULLANMA YILI</span>
-                    <select value={cardForm.expireYear} onChange={e => setCardForm({...cardForm, expireYear: e.target.value})}>
-                      {Array.from({length: 10}).map((_,i) => <option key={i} value={2026+i}>{2026+i}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="co-label-dark">GÜVENLİK KODU (CVV)</span>
-                    <input required type="password" placeholder="123" maxLength="4" value={cardForm.cvv} onChange={e => setCardForm({...cardForm, cvv: e.target.value.replace(/\D/g,'')})} />
-                  </label>
-                </div>
-
-                <div className="co-agreements-box">
-                  <label className="co-checkbox-row align-start">
-                    <input type="checkbox" required checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} />
-                    <span>
-                      <a href="/on-bilgilendirme" target="_blank" rel="noreferrer">Ön Bilgilendirme Formu</a><br/>
-                      ve<br/>
-                      <a href="/mesafeli-satis" target="_blank" rel="noreferrer">Mesafeli Satış Sözleşmesi</a><br/>
-                      'ni okudum, kabul ediyorum.
-                    </span>
-                  </label>
-                </div>
-
-                <button type="submit" disabled={submitting} className="co-submit-btn">
-                  {submitting ? 'İŞLENİYOR...' : `${fmt.format(totalCents / 100)} İLE SİPARİŞİ TAMAMLA`}
-                </button>
-              </form>
-
+              <div className="co-payment-form co-payment-unavailable" role="status">
+                <span aria-hidden="true">◇</span>
+                <h3>Online ödeme sistemi yakında aktif olacaktır.</h3>
+                <p>
+                  Şu anda kart bilgisi almıyor ve sipariş oluşturmuyoruz.
+                  Sepetiniz bu cihazda korunmaya devam edecektir.
+                </p>
+                <a href="/sepetim" className="co-submit-btn">SEPETE DÖN</a>
+              </div>
             </div>
           )}
 
@@ -385,7 +303,7 @@ export default function CheckoutPage() {
             
             <div className="co-summary-items">
               {cartItems.map((item, idx) => (
-                <div className="co-summary-item" key={idx}>
+                <div className={`co-summary-item ${!item.isAvailable ? 'unavailable' : ''}`} key={idx}>
                   <div className="co-summary-img-wrap">
                     <img src={item.product.imageUrl} alt={item.product.name} />
                     <span className="co-summary-qty-badge">{item.quantity}</span>
@@ -393,7 +311,10 @@ export default function CheckoutPage() {
                   <div className="co-summary-item-info">
                     <h4>{item.product.name}</h4>
                     <small>Beden: {item.variantLabel.toUpperCase()}</small>
-                    <strong>{fmt.format(((item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents) * item.quantity) / 100)}</strong>
+                    {!item.isAvailable && <small className="co-item-stock-error">Stokta yok</small>}
+                    <strong>{item.isQuantityValid
+                      ? fmt.format((item.variant.priceCents * item.quantity) / 100)
+                      : 'Toplama dahil değil'}</strong>
                   </div>
                 </div>
               ))}
@@ -433,14 +354,14 @@ export default function CheckoutPage() {
                 <span>{shippingCents === 0 ? 'Ücretsiz' : fmt.format(shippingCents / 100)}</span>
               </div>
               <div className="co-totals-row grand">
-                <span>TOPLAM ÖDENECEK</span>
+                <span>TAHMİNİ TOPLAM</span>
                 <span>{fmt.format(totalCents / 100)}</span>
               </div>
             </div>
 
             <div className="co-summary-perks">
               <p>+ 14 gün ücretsiz kolay iade</p>
-              <p>+ Güvenli 3D Secure kart koruması</p>
+              <p>+ Online ödeme altyapısı hazırlanmaktadır</p>
               <p>+ Şeffaf faturalı ve orijinal ürün garantisi</p>
             </div>
 

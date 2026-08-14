@@ -1,11 +1,26 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { authFetch } from '../lib/auth-fetch';
 import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
+import {
+  addVariantToCart,
+  getCartReconciliationMessage,
+  hydrateCartItems,
+  reconcileCartItems,
+  setCartItemQuantity,
+} from '../lib/cart-catalog';
+import {
+  findVariant,
+  getColorOptions,
+  getSizeOptions,
+  isProductSoldOut,
+  LOW_STOCK_MAX,
+} from '../lib/catalog-stock';
+import { getNextGalleryIndex, getProductGalleryImages } from '../lib/product-gallery';
 import ProductReviews from '../components/ProductReviews';
+import { getAccountOverview } from '../services/account-service';
+import { getCatalogProductBySlug, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
-const WA_LINK = 'https://wa.me/905078195264?text=';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
 
 function SearchIcon() {
@@ -48,70 +63,44 @@ export default function ProductDetail() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
+  const [storeConfig, setStoreConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
 
-  const parseVariant = (label) => {
-    const parts = label.split('/');
-    if (parts.length > 1) {
-      return { color: parts[0].trim(), size: parts[1].trim() };
-    }
-    return { color: null, size: parts[0].trim() };
-  };
-
-  const colors = useMemo(() => {
-    if (!product?.variants) return [];
-    const colorSet = new Set();
-    product.variants.forEach(v => {
-      const { color } = parseVariant(v.label);
-      if (color) colorSet.add(color);
-    });
-    return Array.from(colorSet);
-  }, [product]);
-
-  const sizes = useMemo(() => {
-    if (!product?.variants) return [];
-    const sizeSet = new Set();
-    product.variants.forEach(v => {
-      const { size } = parseVariant(v.label);
-      if (size) sizeSet.add(size);
-    });
-    return Array.from(sizeSet);
-  }, [product]);
+  const colorOptions = useMemo(() => getColorOptions(product), [product]);
+  const sizeOptions = useMemo(
+    () => getSizeOptions(product, selectedColor || null),
+    [product, selectedColor]
+  );
 
   const handleColorChange = (color) => {
     setSelectedColor(color);
-    let match = product.variants.find(v => {
-      const pv = parseVariant(v.label);
-      return pv.color === color && pv.size === selectedSize;
-    });
-    if (!match || match.stock < 1) {
-      const availableForColor = product.variants.find(v => parseVariant(v.label).color === color && v.stock > 0);
-      match = availableForColor || product.variants.find(v => parseVariant(v.label).color === color);
-      if (match) setSelectedSize(parseVariant(match.label).size);
-    }
-    if (match) setSelectedVariant(match);
+    setSelectedSize('');
+    setSelectedVariant(null);
+    setQuantity(1);
+    setStockNotice('');
   };
 
   const handleSizeChange = (size) => {
+    const match = findVariant(product, { color: selectedColor || null, size });
+    if (!match || match.stock < 1) return;
     setSelectedSize(size);
-    const match = product.variants.find(v => {
-      const pv = parseVariant(v.label);
-      if (colors.length > 0) return pv.color === selectedColor && pv.size === size;
-      return pv.size === size;
-    });
-    if (match) setSelectedVariant(match);
+    setSelectedVariant(match);
+    setQuantity(1);
+    setStockNotice('');
   };
-  const [selectedImage, setSelectedImage] = useState('');
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState(() => new Set());
+  const touchStartX = useRef(null);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [cart, setCart] = useState([]);
-  const [cartReady, setCartReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [msg, setMsg] = useState(false);
+  const [stockNotice, setStockNotice] = useState('');
   const [account, setAccount] = useState(null);
 
   // Coupon state
@@ -119,44 +108,43 @@ export default function ProductDetail() {
   const [appliedCoupon, setAppliedCoupon] = useState(() => getSavedCoupon());
   const [couponFeedback, setCouponFeedback] = useState(null);
 
-  // Notify state
-  const [showNotifyModal, setShowNotifyModal] = useState(false);
-  const [notifyContact, setNotifyContact] = useState('');
-  const [notifyLoading, setNotifyLoading] = useState(false);
-  const [notifySuccess, setNotifySuccess] = useState(false);
-
   // Share state
   const [shareFeedback, setShareFeedback] = useState('');
-
-  // FOMO state
-  const [viewers, setViewers] = useState(0);
-
-  useEffect(() => {
-    setViewers(Math.floor(Math.random() * (35 - 8 + 1)) + 8);
-  }, []);
+  const galleryImages = useMemo(() => getProductGalleryImages(product, LOGO), [product]);
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products'),
-      authFetch('/api/account'),
-    ]).then(async ([pRes, aRes]) => {
-      const pData = await pRes.json().catch(() => ({ products: [] }));
-      const aData = aRes.ok ? await aRes.json().catch(() => null) : null;
-      const prods = pData.products || [];
+      getCatalogProductBySlug(slug),
+      getCatalogProducts(),
+      getStoreConfig(),
+      getAccountOverview().catch(() => null),
+    ]).then(([found, prods, config, aData]) => {
       setAllProducts(prods);
+      setStoreConfig(config);
       setAccount(aData);
+      setProduct(found);
+      setLoadError(false);
 
-      const found = prods.find((p) => p.slug === slug);
       if (found) {
-        setProduct(found);
-        const firstInStock = found.variants?.find((v) => v.stock > 0) || found.variants?.[0] || null;
-        setSelectedVariant(firstInStock);
-        if (firstInStock) {
-          const { color, size } = parseVariant(firstInStock.label);
-          setSelectedColor(color || '');
-          setSelectedSize(size || '');
+        const onlyVariant = found.variants?.length === 1 ? found.variants[0] : null;
+        const initialVariant = onlyVariant?.stock > 0 ? onlyVariant : null;
+        setSelectedVariant(initialVariant);
+        setSelectedColor(initialVariant?.color || '');
+        setSelectedSize(initialVariant?.size || '');
+        setSelectedImageIndex(0);
+        setFailedImages(new Set());
+
+        try {
+          const savedCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
+          const reconciled = reconcileCartItems(savedCart, prods);
+          setCart(reconciled.items);
+          if (reconciled.changed) {
+            localStorage.setItem('eztila-cart', JSON.stringify(reconciled.items));
+          }
+          setStockNotice(getCartReconciliationMessage(reconciled.issues));
+        } catch {
+          setCart([]);
         }
-        setSelectedImage(found.imageUrl || LOGO);
 
         try {
           const favs = JSON.parse(localStorage.getItem('eztila-favorites') || '[]');
@@ -166,15 +154,12 @@ export default function ProductDetail() {
           setIsFavorite(false);
         }
       }
+    }).catch(() => {
+      setAllProducts([]);
+      setProduct(null);
+      setLoadError(true);
     }).finally(() => {
-      try {
-        const savedCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-        setCart(savedCart);
-      } catch {
-        setCart([]);
-      }
       setLoading(false);
-      setCartReady(true);
     });
   }, [slug]);
 
@@ -198,68 +183,38 @@ export default function ProductDetail() {
   }
 
   function handleAddToCart() {
-    if (!product) return;
-    const variantLabel = selectedVariant?.label || 'Standart';
-    try {
-      const currentCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-      const idx = currentCart.findIndex((i) => i.productId === product.id && i.variantLabel === variantLabel);
-      let updatedCart;
-      if (idx >= 0) {
-        updatedCart = currentCart.map((item, i) => i === idx ? { ...item, quantity: Math.min(10, item.quantity + quantity) } : item);
-      } else {
-        updatedCart = [...currentCart, { productId: product.id, quantity, variantLabel }];
-      }
-      setCart(updatedCart);
-      localStorage.setItem('eztila-cart', JSON.stringify(updatedCart));
-      setCartOpen(true);
-    } catch {
-      setMsg(false);
+    if (!product || !selectedVariant) {
+      setStockNotice('Lütfen renk ve beden seçin.');
+      return;
     }
+    const result = addVariantToCart(cart, product, selectedVariant, quantity);
+    setCart(result.items);
+    localStorage.setItem('eztila-cart', JSON.stringify(result.items));
+    setStockNotice(result.error);
+    if (!result.error || result.items !== cart) setCartOpen(true);
   }
 
-  function updateQty(productId, variantLabel, qty) {
-    setCart((prev) => {
-      const next = qty < 1
-        ? prev.filter((i) => !(i.productId === productId && i.variantLabel === variantLabel))
-        : prev.map((i) => i.productId === productId && i.variantLabel === variantLabel ? { ...i, quantity: Math.min(10, qty) } : i);
-      localStorage.setItem('eztila-cart', JSON.stringify(next));
-      return next;
-    });
+  function updateQty(item, qty) {
+    const result = setCartItemQuantity(cart, allProducts, item, qty);
+    setCart(result.items);
+    localStorage.setItem('eztila-cart', JSON.stringify(result.items));
+    setStockNotice(result.error);
   }
 
-  function handleNotifySubmit(e) {
-    e.preventDefault();
-    if (!notifyContact.trim()) return;
-    setNotifyLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setNotifyLoading(false);
-      setNotifySuccess(true);
-      setTimeout(() => {
-        setShowNotifyModal(false);
-        setNotifySuccess(false);
-        setNotifyContact('');
-      }, 3000);
-    }, 800);
-  }
+  const cartItems = useMemo(() => hydrateCartItems(cart, allProducts), [cart, allProducts]);
 
-  const cartItems = useMemo(() =>
-    cart.map((item) => ({ ...item, product: allProducts.find((p) => p.id === item.productId) || (item.productId === product?.id ? product : null) })).filter((i) => i.product),
-    [cart, allProducts, product]
-  );
-
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const rawSubtotalCents = cartItems.reduce((sum, item) =>
-    sum + (item.product?.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product?.priceCents || 0) * item.quantity, 0);
+    sum + (item.isQuantityValid ? item.variant.priceCents * item.quantity : 0), 0);
 
-  const freeThreshold = 150000;
-  const standardShippingFee = 7900;
+  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? Number.POSITIVE_INFINITY;
+  const standardShippingFee = storeConfig?.shippingFeeCents ?? 0;
   const shippingFee = (rawSubtotalCents >= freeThreshold || rawSubtotalCents === 0) ? 0 : standardShippingFee;
   const finalTotalCents = rawSubtotalCents + shippingFee;
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const waContactNumber = '905078195264';
+  const waContactNumber = storeConfig?.whatsappNumber || '';
   const shareText = product ? `${product.name} - Eztila Butik` : 'Eztila Butik';
 
   function handleShareFriend() {
@@ -281,8 +236,32 @@ export default function ProductDetail() {
   }
 
   function handleContactWA() {
+    if (!waContactNumber) return;
     const text = encodeURIComponent(`Merhaba, "${product?.name}" ürünü hakkında bilgi almak istiyorum.\nLink: ${currentUrl}`);
     window.open(`https://wa.me/${waContactNumber}?text=${text}`, '_blank');
+  }
+
+  function moveGallery(direction) {
+    setSelectedImageIndex((current) => getNextGalleryIndex(galleryImages, current, direction, failedImages));
+  }
+
+  function handleGalleryImageError(imageUrl) {
+    const nextFailed = new Set(failedImages);
+    nextFailed.add(imageUrl);
+    setFailedImages(nextFailed);
+    const replacement = galleryImages.findIndex((candidate) => !nextFailed.has(candidate));
+    if (replacement >= 0) setSelectedImageIndex(replacement);
+  }
+
+  function handleGalleryKeyDown(event) {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveGallery(-1);
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveGallery(1);
+    }
   }
 
   if (loading) {
@@ -305,7 +284,7 @@ export default function ProductDetail() {
           <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         </header>
         <div className="empty-state">
-          <h3>Aradığınız ürün bulunamadı.</h3>
+          <h3>{loadError ? 'Ürün bilgileri şu anda yüklenemiyor.' : 'Aradığınız ürün bulunamadı.'}</h3>
           <a className="button button-primary" href="/#koleksiyon">Koleksiyona dön</a>
         </div>
       </main>
@@ -313,9 +292,14 @@ export default function ProductDetail() {
   }
 
   const currentPrice = selectedVariant?.priceCents || product.priceCents;
-  const currentStock = selectedVariant?.stock != null ? selectedVariant.stock : product.stock;
-  const hasMultipleImages = product.images && product.images.length > 1;
-  const waProductLink = `${WA_LINK}${encodeURIComponent(`Merhaba Eztila Butik, "${product.name}" hakkında bilgi ve beden danışmanlığı almak istiyorum.`)}`;
+  const soldOut = isProductSoldOut(product);
+  const currentStock = selectedVariant?.stock ?? 0;
+  const hasMultipleImages = galleryImages.length > 1;
+  const selectedImage = galleryImages[selectedImageIndex] || LOGO;
+  const displayedImage = failedImages.has(selectedImage) ? LOGO : selectedImage;
+  const waProductLink = waContactNumber
+    ? `https://wa.me/${waContactNumber}?text=${encodeURIComponent(`Merhaba Eztila Butik, "${product.name}" hakkında bilgi ve beden danışmanlığı almak istiyorum.`)}`
+    : null;
 
   return (
     <main className="detail-shell">
@@ -331,8 +315,8 @@ export default function ProductDetail() {
         </a>
         <nav aria-label="Ana menü">
           <a href="/#koleksiyon">Yeni sezon</a>
-          <a href="/#koleksiyon">Elbiseler</a>
-          <a href="/#koleksiyon">Takımlar</a>
+          <a href="/?category=elbise#koleksiyon">Elbiseler</a>
+          <a href="/?category=alt-ust-takim#koleksiyon">Takımlar</a>
           <a href="/siparis-takip">Sipariş takip</a>
         </nav>
         <div className="header-tools">
@@ -358,7 +342,7 @@ export default function ProductDetail() {
       <div className="breadcrumb">
         <a href="/">Ana Sayfa</a>
         <span>/</span>
-        <a href="/#koleksiyon">{product.category}</a>
+        <a href={`/?category=${encodeURIComponent(product.categorySlug || '')}#koleksiyon`}>{product.category}</a>
         <span>/</span>
         <b>{product.name}</b>
       </div>
@@ -366,21 +350,58 @@ export default function ProductDetail() {
       <section className="product-detail">
         <div className={`detail-gallery ${hasMultipleImages ? 'has-thumbs' : 'single-image'}`}>
           {hasMultipleImages && (
-            <div className="detail-thumbs">
-              {product.images.map((imgUrl, i) => (
+            <div className="detail-thumbs" aria-label="Ürün görselleri">
+              {galleryImages.map((imgUrl, i) => (
                 <button
-                  key={i}
+                  key={imgUrl}
                   type="button"
-                  className={selectedImage === imgUrl ? 'active' : ''}
-                  onClick={() => setSelectedImage(imgUrl)}
+                  className={`${selectedImageIndex === i ? 'active' : ''} ${failedImages.has(imgUrl) ? 'image-failed' : ''}`}
+                  onClick={() => setSelectedImageIndex(i)}
+                  disabled={failedImages.has(imgUrl)}
+                  aria-label={`${i + 1}. ürün görselini göster`}
+                  aria-current={selectedImageIndex === i ? 'true' : undefined}
                 >
-                  <img src={imgUrl} alt="" />
+                  <img
+                    src={failedImages.has(imgUrl) ? LOGO : imgUrl}
+                    alt=""
+                    loading="lazy"
+                    width="80"
+                    height="110"
+                    onError={() => handleGalleryImageError(imgUrl)}
+                  />
                 </button>
               ))}
             </div>
           )}
-          <div className="detail-main-image">
-            <img src={selectedImage || product.imageUrl || LOGO} alt={product.name} />
+          <div
+            className="detail-main-image"
+            tabIndex={hasMultipleImages ? 0 : undefined}
+            onKeyDown={hasMultipleImages ? handleGalleryKeyDown : undefined}
+            onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
+            onTouchEnd={(event) => {
+              if (!hasMultipleImages || touchStartX.current == null) return;
+              const distance = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+              if (Math.abs(distance) >= 45) moveGallery(distance > 0 ? -1 : 1);
+              touchStartX.current = null;
+            }}
+            aria-label={hasMultipleImages ? 'Ürün görsel galerisi. Ok tuşlarıyla gezinebilirsiniz.' : undefined}
+          >
+            <img
+              src={displayedImage}
+              alt={`${product.name} - görsel ${selectedImageIndex + 1}`}
+              loading="eager"
+              fetchPriority="high"
+              width="900"
+              height="1200"
+              onError={() => handleGalleryImageError(selectedImage)}
+            />
+            {hasMultipleImages && (
+              <>
+                <button type="button" className="gallery-arrow gallery-arrow-prev" onClick={() => moveGallery(-1)} aria-label="Önceki görsel">‹</button>
+                <button type="button" className="gallery-arrow gallery-arrow-next" onClick={() => moveGallery(1)} aria-label="Sonraki görsel">›</button>
+                <span className="gallery-counter" aria-live="polite">{selectedImageIndex + 1} / {galleryImages.length}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -395,17 +416,19 @@ export default function ProductDetail() {
             )}
           </div>
 
-          <div className="fomo-triggers">
-            <div className="fomo-viewers">
-              <span className="pulsing-dot"></span>
-              Bu ürünü şu an <strong>{viewers} kişi</strong> inceliyor
-            </div>
-            {currentStock > 0 && currentStock <= 3 && (
+          {currentStock > 0 && currentStock <= LOW_STOCK_MAX && (
+            <div className="fomo-triggers">
               <div className="fomo-low-stock">
-                🔥 Son <strong>{currentStock}</strong> ürün kaldı!
+                Son <strong>{currentStock}</strong> adet
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {soldOut && (
+            <p className="product-stock-status sold-out" role="status">
+              Bu ürünün tüm seçenekleri şu anda tükenmiştir.
+            </p>
+          )}
 
           {product.description && (
             <div className="detail-description">
@@ -415,47 +438,44 @@ export default function ProductDetail() {
 
           {product.variants && product.variants.length > 1 && (
             <div className="detail-field">
-              {colors.length > 0 && (
+              {colorOptions.length > 0 && (
                 <div className="variant-group">
-                  <span className="variant-label">Renk: <strong>{selectedColor}</strong></span>
+                  <span className="variant-label">Renk: <strong>{selectedColor || 'Seçiniz'}</strong></span>
                   <div className="variant-options colors">
-                    {colors.map(color => (
+                    {colorOptions.map((option) => (
                       <button 
-                        key={color} 
+                        key={option.value}
                         type="button"
-                        className={`color-swatch ${color === selectedColor ? 'active' : ''}`}
-                        onClick={() => handleColorChange(color)}
-                        title={color}
+                        className={`color-swatch ${option.value === selectedColor ? 'active' : ''} ${!option.isAvailable ? 'out-of-stock' : ''}`}
+                        onClick={() => handleColorChange(option.value)}
+                        title={option.isAvailable ? option.value : `${option.value} — Tükendi`}
+                        disabled={!option.isAvailable}
                       >
-                        {color}
+                        {option.value}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              {sizes.length > 0 && (
+              {colorOptions.length > 0 && !selectedColor && (
+                <p className="variant-help">Bedenleri görmek için renk seçin.</p>
+              )}
+              {sizeOptions.length > 0 && (
                 <div className="variant-group">
-                  <span className="variant-label">Beden: <strong>{selectedSize}</strong></span>
+                  <span className="variant-label">Beden: <strong>{selectedSize || 'Seçiniz'}</strong></span>
                   <div className="variant-options sizes">
-                    {sizes.map(size => {
-                      const variant = product.variants.find(v => {
-                        const pv = parseVariant(v.label);
-                        if (colors.length > 0) return pv.color === selectedColor && pv.size === size;
-                        return pv.size === size;
-                      });
-                      const isOut = !variant || variant.stock < 1;
-                      return (
+                    {sizeOptions.map((option) => (
                         <button 
-                          key={size}
+                          key={option.variant.id}
                           type="button"
-                          className={`size-box ${size === selectedSize ? 'active' : ''} ${isOut ? 'out-of-stock' : ''}`}
-                          onClick={() => !isOut && handleSizeChange(size)}
-                          disabled={isOut}
+                          className={`size-box ${option.value === selectedSize ? 'active' : ''} ${!option.isAvailable ? 'out-of-stock' : ''}`}
+                          onClick={() => handleSizeChange(option.value)}
+                          disabled={!option.isAvailable}
+                          title={option.isAvailable ? `${option.stock} adet stokta` : 'Tükendi'}
                         >
-                          {size}
+                          {option.value}
                         </button>
-                      );
-                    })}
+                    ))}
                   </div>
                 </div>
               )}
@@ -464,16 +484,21 @@ export default function ProductDetail() {
 
           <div className="detail-buy">
             <div className="detail-qty">
-              <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+              <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={!selectedVariant}>−</button>
               <b>{quantity}</b>
-              <button type="button" onClick={() => setQuantity((q) => Math.min(10, q + 1))}>+</button>
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
+                disabled={!selectedVariant || quantity >= currentStock}
+              >+</button>
             </div>
             <button
               type="button"
               className="button button-primary"
-              onClick={currentStock > 0 ? handleAddToCart : () => setShowNotifyModal(true)}
+              onClick={handleAddToCart}
+              disabled={!selectedVariant || currentStock < 1}
             >
-              {currentStock > 0 ? 'Sepete Ekle' : 'Gelince Haber Ver'}
+              {soldOut ? 'Tükendi' : selectedVariant ? 'Sepete Ekle' : 'Seçenek Seçin'}
             </button>
             <button
               type="button"
@@ -484,9 +509,17 @@ export default function ProductDetail() {
               <HeartIcon filled={isFavorite} />
             </button>
           </div>
+          {stockNotice && (
+            <p className="stock-feedback" role="status">{stockNotice}</p>
+          )}
+          {soldOut && (
+            <p className="stock-notify-note" role="status">
+              Stok bildirimi hizmeti henüz aktif değildir.
+            </p>
+          )}
 
           <div className="social-share-block">
-            <button type="button" className="share-btn wa-consult" onClick={handleContactWA}>
+            <button type="button" className="share-btn wa-consult" onClick={handleContactWA} disabled={!waContactNumber}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
               WhatsApp'tan Danış
             </button>
@@ -515,9 +548,11 @@ export default function ProductDetail() {
                 <strong>WhatsApp Beden &amp; Stil Danışmanlığı</strong>
                 <span>
                   Beden ve kombin konusunda kararsız mısınız?{' '}
-                  <a href={waProductLink} target="_blank" rel="noreferrer">
-                    Stil danışmanımıza danışın →
-                  </a>
+                  {waProductLink && (
+                    <a href={waProductLink} target="_blank" rel="noreferrer">
+                      Stil danışmanımıza danışın →
+                    </a>
+                  )}
                 </span>
               </div>
             </article>
@@ -552,11 +587,18 @@ export default function ProductDetail() {
                   <div>
                     <h3>{item.product?.name}</h3>
                     <span>{item.variantLabel}</span>
-                    <strong>{fmt.format((item.product?.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product?.priceCents || 0) / 100)}</strong>
+                    <strong>{fmt.format(item.variant.priceCents / 100)}</strong>
+                    {!item.isAvailable && (
+                      <p className="cart-stock-warning">Bu ürün şu anda stokta bulunmuyor.</p>
+                    )}
                     <div className="qty">
-                      <button type="button" onClick={() => updateQty(item.productId, item.variantLabel, item.quantity - 1)}>−</button>
+                      <button type="button" onClick={() => updateQty(item, item.quantity - 1)}>−</button>
                       <b>{item.quantity}</b>
-                      <button type="button" onClick={() => updateQty(item.productId, item.variantLabel, item.quantity + 1)}>+</button>
+                      <button
+                        type="button"
+                        onClick={() => updateQty(item, item.quantity + 1)}
+                        disabled={!item.isAvailable || item.quantity >= item.stock}
+                      >+</button>
                     </div>
                   </div>
                 </article>
@@ -595,40 +637,6 @@ export default function ProductDetail() {
         </div>
       )}
 
-      {showNotifyModal && (
-        <div className="notify-modal-backdrop" onClick={() => !notifyLoading && setShowNotifyModal(false)}>
-          <div className="notify-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="notify-modal-close" onClick={() => setShowNotifyModal(false)}>×</button>
-            <div className="notify-modal-header">
-              <h3>Gelince Haber Ver</h3>
-              <p>"{product?.name}" ({selectedVariant?.label}) stoğa girdiğinde size haber verelim.</p>
-            </div>
-            {notifySuccess ? (
-              <div className="notify-modal-success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                <h4>Talebiniz Alındı</h4>
-                <p>Ürün stoğa girdiğinde size en kısa sürede haber vereceğiz.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleNotifySubmit} className="notify-modal-form">
-                <label htmlFor="notifyContact">E-posta veya Telefon Numaranız</label>
-                <input
-                  id="notifyContact"
-                  type="text"
-                  placeholder="ornek@email.com veya 5XX XXX XX XX"
-                  value={notifyContact}
-                  onChange={(e) => setNotifyContact(e.target.value)}
-                  disabled={notifyLoading}
-                  required
-                />
-                <button type="submit" className="button button-primary" disabled={notifyLoading || !notifyContact.trim()}>
-                  {notifyLoading ? 'Kaydediliyor...' : 'Haber Ver'}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </main>
   );
 }

@@ -1,0 +1,12 @@
+[
+  {
+    "sku": "EZTILA-SKU-ORNEK",
+    "stock_quantity": 5
+  },
+  {
+    "product_slug": "urun-slug",
+    "color": "Siyah",
+    "size": "M",
+    "stock_quantity": 2
+  }
+]

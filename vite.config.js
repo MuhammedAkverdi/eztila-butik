@@ -5,11 +5,5 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    proxy: {
-      '/api': {
-        target: 'https://eztila-butik.rexkar.chatgpt.site',
-        changeOrigin: true,
-      },
-    },
   },
 });

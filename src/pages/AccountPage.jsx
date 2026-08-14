@@ -1,21 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getSupabaseClient } from '../lib/supabase';
-import { authFetch } from '../lib/auth-fetch';
 import { PROMO_COUPONS } from '../lib/coupons';
+import { getAccountOverview } from '../services/account-service';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
-
-const EMPTY_ADDRESS = {
-  label: 'Evim',
-  contactName: '',
-  phone: '',
-  city: '',
-  district: '',
-  neighborhood: '',
-  address: '',
-  postalCode: '',
-  isDefault: true,
-};
 
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 
@@ -81,8 +69,6 @@ function EmptyState({ title, text, action, href, onClick }) {
 export default function AccountPage() {
   const [account, setAccount] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [editAddress, setEditAddress] = useState(null);
-  const [editAddressId, setEditAddressId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [favorites, setFavorites] = useState([]);
   
@@ -93,7 +79,6 @@ export default function AccountPage() {
 
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Load wishlist from localStorage
@@ -113,30 +98,11 @@ export default function AccountPage() {
     setSuccessMsg('Ürün favorilerden kaldırıldı.');
   }
 
-  function addFavoriteToCart(product) {
-    try {
-      const currentCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-      const defaultVariant = product.variants?.find((v) => v.stock > 0)?.label || 'Standart';
-      const idx = currentCart.findIndex((i) => i.productId === product.id && i.variantLabel === defaultVariant);
-      let updatedCart;
-      if (idx >= 0) {
-        updatedCart = currentCart.map((item, i) => i === idx ? { ...item, quantity: Math.min(10, item.quantity + 1) } : item);
-      } else {
-        updatedCart = [...currentCart, { productId: product.id, quantity: 1, variantLabel: defaultVariant }];
-      }
-      localStorage.setItem('eztila-cart', JSON.stringify(updatedCart));
-      setSuccessMsg(`"${product.name}" sepete eklendi.`);
-    } catch {
-      setErrorMsg('Ürün sepete eklenemedi.');
-    }
-  }
-
   async function loadAccount() {
     try {
-      const res = await authFetch('/api/account');
-      if (res.status === 401) { window.location.replace('/giris'); return; }
-      if (!res.ok) throw new Error('Hesap bilgileri alınamadı.');
-      setAccount(await res.json());
+      const currentAccount = await getAccountOverview();
+      if (!currentAccount) { window.location.replace('/giris'); return; }
+      setAccount(currentAccount);
       setErrorMsg('');
     } catch {
       setErrorMsg('Hesabın şu anda yüklenemedi. İnternet bağlantını kontrol edip yeniden dene.');
@@ -151,125 +117,18 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    if (!editAddress && !selectedOrder) return;
+    if (!selectedOrder) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     function onKey(e) { 
-      if (e.key === 'Escape' && !saving) { 
-        setEditAddress(null); 
-        setEditAddressId(null);
-        setSelectedOrder(null);
-      } 
+      if (e.key === 'Escape') setSelectedOrder(null);
     }
     document.addEventListener('keydown', onKey);
     return () => { 
       document.body.style.overflow = prev; 
       document.removeEventListener('keydown', onKey); 
     };
-  }, [editAddress, selectedOrder, saving]);
-
-  function startEditAddress(addr) {
-    const { id, ...rest } = addr;
-    setEditAddressId(id);
-    setEditAddress(rest);
-  }
-
-  function startNewAddress() {
-    if (!account) return;
-    setEditAddress({
-      ...EMPTY_ADDRESS,
-      contactName: account.customer.fullName || '',
-      phone: account.customer.phone || '',
-      isDefault: account.addresses.length === 0,
-    });
-    setEditAddressId(null);
-  }
-
-  async function handleAddressSave(e) {
-    e.preventDefault();
-    if (!editAddress) return;
-    setSaving(true);
-    setErrorMsg('');
-    try {
-      const url = editAddressId ? `/api/account/addresses/${editAddressId}` : '/api/account/addresses';
-      const res = await authFetch(url, {
-        method: editAddressId ? 'PATCH' : 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(editAddress),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Adres kaydedilemedi');
-      setSuccessMsg(editAddressId ? 'Adres başarıyla güncellendi.' : 'Yeni teslimat adresi eklendi.');
-      setEditAddress(null);
-      setEditAddressId(null);
-      await loadAccount();
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Adres kaydedilemedi.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteAddress(id) {
-    if (!confirm('Bu adresi silmek istediğine emin misin?')) return;
-    try {
-      const res = await authFetch(`/api/account/addresses/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      setSuccessMsg('Adres başarıyla silindi.');
-      await loadAccount();
-    } catch {
-      setErrorMsg('Adres silinemedi. Lütfen tekrar dene.');
-    }
-  }
-
-  async function setDefaultAddress(id) {
-    try {
-      const res = await authFetch(`/api/account/addresses/${id}`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ isDefault: true }),
-      });
-      if (!res.ok) throw new Error();
-      setSuccessMsg('Varsayılan teslimat adresi güncellendi.');
-      await loadAccount();
-    } catch {
-      setErrorMsg('Varsayılan adres güncellenemedi.');
-    }
-  }
-
-  async function deletePaymentMethod(id) {
-    if (!confirm('Bu kayıtlı ödeme yöntemini kaldırmak istediğine emin misin?')) return;
-    try {
-      const res = await authFetch(`/api/account/payment-methods/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      setSuccessMsg('Ödeme yöntemi kaldırıldı.');
-      await loadAccount();
-    } catch {
-      setErrorMsg('Ödeme yöntemi kaldırılamadı.');
-    }
-  }
-
-  async function handleProfileSave(e) {
-    e.preventDefault();
-    if (!account) return;
-    setSaving(true);
-    setErrorMsg('');
-    try {
-      const res = await authFetch('/api/account', {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(account.customer),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Profil güncellenemedi');
-      setSuccessMsg('Profil bilgileriniz başarıyla güncellendi.');
-      await loadAccount();
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Profil güncellenemedi.');
-    } finally {
-      setSaving(false);
-    }
-  }
+  }, [selectedOrder]);
 
   async function handlePasswordChange(e) {
     e.preventDefault();
@@ -332,7 +191,7 @@ export default function AccountPage() {
           <div>
             <p>EZTİLA MEMBERS</p>
             <h1>Merhaba, {firstName}.</h1>
-            <span>Siparişlerin, adreslerin ve sana özel butik deneyimin tek yerde.</span>
+            <span>Üyelik kimliğin ve hesap güvenliği ayarların tek yerde.</span>
           </div>
         </div>
         <div className="member-hero-actions">
@@ -355,9 +214,9 @@ export default function AccountPage() {
             <i>{tab.mark}</i>
             <span className="tab-desktop">{tab.label}</span>
             <span className="tab-mobile">{tab.mobile}</span>
-            {tab.id === 'orders' && <b>{account?.orders.length || 0}</b>}
+            {tab.id === 'orders' && <b>{account?.accountBackendAvailable ? account.orders.length : '—'}</b>}
             {tab.id === 'favorites' && <b>{favorites.length}</b>}
-            {tab.id === 'addresses' && <b>{account?.addresses.length || 0}</b>}
+            {tab.id === 'addresses' && <b>{account?.accountBackendAvailable ? account.addresses.length : '—'}</b>}
           </button>
         ))}
       </nav>
@@ -382,6 +241,12 @@ export default function AccountPage() {
           </div>
         )}
 
+        {account && !account.accountBackendAvailable && (
+          <div className="account-message" role="status">
+            <span>Profil kimliğin Supabase Auth üzerinden doğrulanır. Sipariş, adres ve kayıtlı ödeme verileri için hesap altyapısı henüz aktif değildir.</span>
+          </div>
+        )}
+
         {loading ? (
           <div className="account-loading">Hesabın hazırlanıyor…</div>
         ) : account && (
@@ -392,7 +257,7 @@ export default function AccountPage() {
                 <div className="member-stat-grid">
                   <article>
                     <span>Siparişlerim</span>
-                    <strong>{account.orders.length}</strong>
+                    <strong>{account.accountBackendAvailable ? account.orders.length : '—'}</strong>
                     <button type="button" onClick={() => setActiveTab('orders')}>Tümünü gör →</button>
                   </article>
                   <article>
@@ -402,7 +267,7 @@ export default function AccountPage() {
                   </article>
                   <article>
                     <span>Kayıtlı Adresler</span>
-                    <strong>{account.addresses.length}</strong>
+                    <strong>{account.accountBackendAvailable ? account.addresses.length : '—'}</strong>
                     <button type="button" onClick={() => setActiveTab('addresses')}>Adresleri yönet →</button>
                   </article>
                 </div>
@@ -421,8 +286,8 @@ export default function AccountPage() {
                     ))
                   ) : (
                     <EmptyState
-                      title="Henüz siparişin yok."
-                      text="Beğendiğin parçaları keşfet; ilk siparişin burada görünecek."
+                      title="Sipariş geçmişi henüz aktif değil."
+                      text="Sipariş altyapısı tamamlandığında gerçek siparişlerin burada görünecek."
                       action="Koleksiyonu keşfet"
                       href="/#koleksiyon"
                     />
@@ -479,8 +344,8 @@ export default function AccountPage() {
                   ))
                 ) : (
                   <EmptyState
-                    title="Henüz siparişin yok."
-                    text="Yeni sezon koleksiyonundan ilk Eztila görünümünü oluştur."
+                    title="Sipariş geçmişi henüz aktif değil."
+                    text="Gerçek sipariş backend'i hazır olduğunda siparişlerin burada listelenecek."
                     action="Alışverişe başla"
                     href="/#koleksiyon"
                   />
@@ -506,9 +371,9 @@ export default function AccountPage() {
                           <h3>{prod.name}</h3>
                           <strong>{fmt.format(prod.priceCents / 100)}</strong>
                           <div className="fav-actions">
-                            <button type="button" className="account-primary" onClick={() => addFavoriteToCart(prod)}>
-                              Sepete Ekle
-                            </button>
+                            <a className="account-primary" href={`/urun/${prod.slug}`}>
+                              Seçenekleri Gör
+                            </a>
                             <button type="button" className="danger-text-btn" onClick={() => removeFavorite(prod.id)}>
                               Kaldır
                             </button>
@@ -534,41 +399,15 @@ export default function AccountPage() {
                 <div className="account-panel-head">
                   <div>
                     <h2>Teslimat adresleri</h2>
-                    <p>Ödeme sırasında hızlıca seçebileceğin kayıtlı teslimat adreslerin.</p>
+                    <p>Adres kaydetme altyapısı henüz aktif değildir.</p>
                   </div>
-                  <button type="button" className="account-primary" onClick={startNewAddress}>
-                    + Yeni adres ekle
-                  </button>
                 </div>
-                <div className="address-grid">
-                  {account.addresses.map((addr) => (
-                    <article key={addr.id} className={addr.isDefault ? 'default-address-card' : ''}>
-                      {addr.isDefault && <b>Varsayılan</b>}
-                      <h3>{addr.label}</h3>
-                      <strong>{addr.contactName}</strong>
-                      <p>
-                        {addr.neighborhood && `${addr.neighborhood}, `}{addr.address}<br />
-                        {addr.district} / {addr.city} {addr.postalCode && `(${addr.postalCode})`}
-                      </p>
-                      <span className="address-phone">{addr.phone}</span>
-                      <div className="address-actions">
-                        <button type="button" onClick={() => startEditAddress(addr)}>Düzenle</button>
-                        {!addr.isDefault && (
-                          <button type="button" onClick={() => setDefaultAddress(addr.id)}>Varsayılan Yap</button>
-                        )}
-                        <button type="button" className="danger" onClick={() => deleteAddress(addr.id)}>Sil</button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                {!account.addresses.length && !editAddress && (
-                  <EmptyState
-                    title="Kayıtlı adresin yok."
-                    text="Teslimat bilgilerini bir kez ekle, sonraki alışverişlerini hızlandır."
-                    action="İlk adresini ekle"
-                    onClick={startNewAddress}
-                  />
-                )}
+                <EmptyState
+                  title="Adres kaydetme yakında aktif olacak."
+                  text="Şu anda teslimat adresi almıyor veya saklamıyoruz."
+                  action="Koleksiyona dön"
+                  href="/#koleksiyon"
+                />
               </section>
             )}
 
@@ -578,29 +417,15 @@ export default function AccountPage() {
                 <div className="account-panel-head">
                   <div>
                     <h2>Kayıtlı ödeme yöntemleri</h2>
-                    <p>Kart numarası ve CVV Eztila'da saklanmaz; yalnız lisanslı ödeme kuruluşu tokenı kullanılır.</p>
+                    <p>Online ödeme ve kart saklama altyapısı henüz aktif değildir.</p>
                   </div>
                 </div>
-                <div className="payment-card-grid">
-                  {account.paymentMethods?.map((pm) => (
-                    <article key={pm.id}>
-                      <div>
-                        <span>{pm.cardBrand || 'KART'}</span>
-                        <b>•••• •••• •••• {pm.lastFourDigits}</b>
-                        <small>{pm.cardAlias}</small>
-                      </div>
-                      <button type="button" onClick={() => deletePaymentMethod(pm.id)}>Kaldır</button>
-                    </article>
-                  ))}
-                </div>
-                {!account.paymentMethods?.length && (
-                  <EmptyState
-                    title="Henüz kayıtlı kartın yok."
-                    text="Güvenli kart saklama altyapısı ile sipariş sırasında kartını bir sonraki alışverişin için kaydedebilirsin."
-                    action="Alışverişe dön"
-                    href="/#koleksiyon"
-                  />
-                )}
+                <EmptyState
+                  title="Kayıtlı ödeme yöntemi özelliği aktif değil."
+                  text="Eztila şu anda kart bilgisi veya ödeme yöntemi saklamamaktadır."
+                  action="Koleksiyona dön"
+                  href="/#koleksiyon"
+                />
               </section>
             )}
 
@@ -610,20 +435,16 @@ export default function AccountPage() {
                 <div className="account-panel-head">
                   <div>
                     <h2>Kişisel bilgilerim</h2>
-                    <p>Sipariş ve teslimat iletişiminde kullanılacak resmi hesap bilgilerin.</p>
+                    <p>Supabase Auth hesabından okunan kimlik bilgilerin.</p>
                   </div>
                 </div>
-                <form className="account-profile-form" onSubmit={handleProfileSave}>
+                <div className="account-profile-form">
                   <label>
                     Ad soyad
                     <input
-                      required
                       autoComplete="name"
                       value={account.customer.fullName || ''}
-                      onChange={(e) => setAccount({
-                        ...account,
-                        customer: { ...account.customer, fullName: e.target.value }
-                      })}
+                      disabled
                     />
                   </label>
                   <label>
@@ -637,37 +458,15 @@ export default function AccountPage() {
                       type="tel"
                       autoComplete="tel"
                       value={account.customer.phone || ''}
-                      onChange={(e) => setAccount({
-                        ...account,
-                        customer: { ...account.customer, phone: e.target.value }
-                      })}
                       placeholder="05xx xxx xx xx"
+                      disabled
                     />
                   </label>
                   <div className="account-consent-box">
-                    <strong>İletişim tercihleri</strong>
-                    <p>Kampanya, indirim ve yeni sezon bilgilendirme onaylarınızı dilediğiniz zaman güncelleyebilirsiniz.</p>
-                    <label className="account-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={!!(account.customer.emailMarketing && account.customer.smsMarketing)}
-                        onChange={(e) => setAccount({
-                          ...account,
-                          customer: {
-                            ...account.customer,
-                            emailMarketing: e.target.checked,
-                            smsMarketing: e.target.checked,
-                          }
-                        })}
-                      />
-                      <span>Yeni ürün ve kampanyaları e-posta ve SMS ile almak istiyorum.</span>
-                    </label>
-                    <a href="/ticari-ileti" target="_blank" rel="noreferrer">Ticari ileti izni ayrıntıları →</a>
+                    <strong>Profil güncelleme yakında</strong>
+                    <p>Profil, telefon ve iletişim tercihi kaydetme altyapısı henüz aktif değildir.</p>
                   </div>
-                  <button type="submit" className="account-primary" disabled={saving}>
-                    {saving ? 'Kaydediliyor…' : 'Bilgilerimi Güncelle'}
-                  </button>
-                </form>
+                </div>
               </section>
             )}
 
@@ -711,67 +510,6 @@ export default function AccountPage() {
               </section>
             )}
           </>
-        )}
-
-        {/* ADDRESS MODAL */}
-        {editAddress && (
-          <div className="account-modal-backdrop" onMouseDown={() => { if (!saving) { setEditAddress(null); setEditAddressId(null); } }}>
-            <section className="account-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-              <header>
-                <div>
-                  <small>TESLİMAT ADRESİ</small>
-                  <h2>{editAddressId ? 'Adresi düzenle' : 'Yeni adres ekle'}</h2>
-                </div>
-                <button type="button" aria-label="Pencereyi kapat" onClick={() => { setEditAddress(null); setEditAddressId(null); }}>×</button>
-              </header>
-              <form onSubmit={handleAddressSave}>
-                <div className="account-form-grid">
-                  <label>
-                    Adres başlığı (örn: Evim, İşyeri)
-                    <input required value={editAddress.label} onChange={(e) => setEditAddress({ ...editAddress, label: e.target.value })} placeholder="Evim / İş" />
-                  </label>
-                  <label>
-                    Teslim Alacak Kişi (Ad Soyad)
-                    <input required autoComplete="name" value={editAddress.contactName} onChange={(e) => setEditAddress({ ...editAddress, contactName: e.target.value })} />
-                  </label>
-                  <label>
-                    Telefon
-                    <input required type="tel" autoComplete="tel" value={editAddress.phone} onChange={(e) => setEditAddress({ ...editAddress, phone: e.target.value })} placeholder="05xx xxx xx xx" />
-                  </label>
-                  <label>
-                    İl
-                    <input required autoComplete="address-level1" value={editAddress.city} onChange={(e) => setEditAddress({ ...editAddress, city: e.target.value })} placeholder="İstanbul" />
-                  </label>
-                  <label>
-                    İlçe
-                    <input required autoComplete="address-level2" value={editAddress.district} onChange={(e) => setEditAddress({ ...editAddress, district: e.target.value })} placeholder="Kadıköy" />
-                  </label>
-                  <label>
-                    Mahalle
-                    <input value={editAddress.neighborhood || ''} onChange={(e) => setEditAddress({ ...editAddress, neighborhood: e.target.value })} placeholder="Caddebostan Mah." />
-                  </label>
-                  <label className="wide">
-                    Açık Adres (Cadde, Sokak, Bina No, Daire No)
-                    <textarea required autoComplete="street-address" value={editAddress.address} onChange={(e) => setEditAddress({ ...editAddress, address: e.target.value })} placeholder="Bağdat Cad. No: 123 Daire: 4" />
-                  </label>
-                  <label>
-                    Posta kodu
-                    <input autoComplete="postal-code" value={editAddress.postalCode || ''} onChange={(e) => setEditAddress({ ...editAddress, postalCode: e.target.value })} placeholder="34728" />
-                  </label>
-                  <label className="account-checkbox wide">
-                    <input type="checkbox" checked={editAddress.isDefault} onChange={(e) => setEditAddress({ ...editAddress, isDefault: e.target.checked })} />
-                    <span>Bu adresi varsayılan teslimat adresim yap</span>
-                  </label>
-                </div>
-                <footer>
-                  <button type="button" onClick={() => { setEditAddress(null); setEditAddressId(null); }}>Vazgeç</button>
-                  <button type="submit" className="account-primary" disabled={saving}>
-                    {saving ? 'Kaydediliyor…' : 'Adresi Kaydet'}
-                  </button>
-                </footer>
-              </form>
-            </section>
-          </div>
         )}
 
         {/* ORDER DETAIL MODAL */}

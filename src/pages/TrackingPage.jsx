@@ -1,48 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 
-const STATUS_TITLES = {
-  pending_payment: 'Ödeme Bekleniyor',
-  paid: 'Ödeme Alındı',
-  preparing: 'Siparişiniz Hazırlanıyor',
-  shipped: 'Kargoya Verildi',
-  delivered: 'Teslim Edildi',
-};
-
 export default function TrackingPage() {
   const [params] = useSearchParams();
   const [orderNo, setOrderNo] = useState(params.get('order') || '');
-  const [searchedOrder, setSearchedOrder] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState('');
 
   function handleSearch(e) {
     e?.preventDefault();
     if (!orderNo.trim()) return;
-    setLoading(true);
-    setError('');
-
-    // Query mock or api
-    setTimeout(() => {
-      setLoading(false);
-      setSearchedOrder({
-        orderNumber: orderNo.toUpperCase(),
-        status: 'shipped',
-        cargoFirm: 'Yurtiçi Kargo',
-        trackingNumber: 'YK-8921849102',
-        estimatedDelivery: '1-2 İş Günü',
-        createdAt: new Date().toLocaleDateString('tr-TR'),
-      });
-    }, 400);
+    setNotice('Sipariş takip sistemi henüz aktif değildir. Siparişinizle ilgili destek için WhatsApp hattımızdan bize ulaşabilirsiniz.');
   }
-
-  useEffect(() => {
-    if (params.get('order')) {
-      handleSearch();
-    }
-  }, [params]);
 
   return (
     <main className="tracking-shell">
@@ -58,7 +28,7 @@ export default function TrackingPage() {
       <div className="tracking-card">
         <p className="eyebrow">EZTİLA SİPARİŞ TAKİBİ</p>
         <h1>Kargonuz Nerede?</h1>
-        <p>Sipariş numaranızı yazarak kargo durumunuzu anlık olarak sorgulayabilirsiniz.</p>
+        <p>Sipariş takip altyapımızı hazırlıyoruz. Şimdilik siparişinizle ilgili destek için bize ulaşabilirsiniz.</p>
 
         <form onSubmit={handleSearch}>
           <label>
@@ -70,29 +40,24 @@ export default function TrackingPage() {
               placeholder="EZT-123456"
             />
           </label>
-          <button type="submit" className="button button-primary" disabled={loading}>
-            {loading ? 'Sorgulanıyor…' : 'Siparişi Sorgula →'}
+          <button type="submit" className="button button-primary">
+            Durumu Kontrol Et →
           </button>
         </form>
 
-        {error && <div className="tracking-error" role="alert">{error}</div>}
-
-        {searchedOrder && (
-          <div className="tracking-result">
-            <small>SİPARİŞ DURUMU</small>
-            <h2>{STATUS_TITLES[searchedOrder.status] || searchedOrder.status}</h2>
-            <p>
-              Kargo Firması: <strong>{searchedOrder.cargoFirm}</strong> | Takip No: <strong>{searchedOrder.trackingNumber}</strong>
-            </p>
-            <div className={`tracking-progress ${searchedOrder.status}`}>
-              <span title="Ödeme Alındı"></span>
-              <span title="Hazırlanıyor"></span>
-              <span title="Kargoda"></span>
-              <span title="Teslim Edildi"></span>
-            </div>
-            <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#68645d' }}>
-              Tahmini Teslimat Süresi: <strong>{searchedOrder.estimatedDelivery}</strong>
-            </p>
+        {notice && (
+          <div className="tracking-result tracking-unavailable" role="status">
+            <small>BİLGİLENDİRME</small>
+            <h2>Online takip yakında</h2>
+            <p>{notice}</p>
+            <a
+              className="button button-primary"
+              href="https://wa.me/905078195264?text=Merhaba%20Eztila%20Butik%2C%20sipari%C5%9Fim%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+              target="_blank"
+              rel="noreferrer"
+            >
+              WhatsApp'tan Destek Al
+            </a>
           </div>
         )}
       </div>

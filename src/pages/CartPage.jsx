@@ -1,5 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
+import {
+  getCartReconciliationMessage,
+  hasBlockingCartStockIssue,
+  hydrateCartItems,
+  reconcileCartItems,
+  setCartItemQuantity,
+} from '../lib/cart-catalog';
+import { getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
@@ -37,7 +45,9 @@ export default function CartPage() {
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [storeConfig, setStoreConfig] = useState(null);
+  const [stockNotice, setStockNotice] = useState('');
   
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
@@ -46,45 +56,43 @@ export default function CartPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products').then(r => r.json()),
-      fetch('/api/store-config').then(r => r.json())
-    ]).then(([pData, sData]) => {
-      setProducts(pData.products || []);
-      setStoreConfig(sData.store || null);
-    }).catch(() => {
-      // ignore
-    }).finally(() => {
+      getCatalogProducts(),
+      getStoreConfig(),
+    ]).then(([catalogProducts, config]) => {
+      setProducts(catalogProducts);
+      setStoreConfig(config);
+      setLoadError(false);
       try {
         const saved = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-        setCart(saved);
+        const reconciled = reconcileCartItems(saved, catalogProducts);
+        setCart(reconciled.items);
+        if (reconciled.changed) {
+          localStorage.setItem('eztila-cart', JSON.stringify(reconciled.items));
+        }
+        setStockNotice(getCartReconciliationMessage(reconciled.issues));
       } catch {
         setCart([]);
       }
+    }).catch(() => {
+      setLoadError(true);
+    }).finally(() => {
       setLoading(false);
     });
   }, []);
 
-  const cartItems = useMemo(() =>
-    cart.map((item) => ({ ...item, product: products.find((p) => p.id === item.productId) })).filter((i) => i.product),
-  [cart, products]);
+  const cartItems = useMemo(() => hydrateCartItems(cart, products), [cart, products]);
 
-  const updateQty = (productId, variantLabel, newQty) => {
-    setCart((prev) => {
-      let next;
-      if (newQty < 1) {
-        next = prev.filter((i) => !(i.productId === productId && i.variantLabel === variantLabel));
-      } else {
-        next = prev.map((i) => i.productId === productId && i.variantLabel === variantLabel ? { ...i, quantity: Math.min(10, newQty) } : i);
-      }
-      localStorage.setItem('eztila-cart', JSON.stringify(next));
-      return next;
-    });
+  const updateQty = (item, newQty) => {
+    const result = setCartItemQuantity(cart, products, item, newQty);
+    setCart(result.items);
+    localStorage.setItem('eztila-cart', JSON.stringify(result.items));
+    setStockNotice(result.error);
   };
 
   const rawSubtotalCents = cartItems.reduce((sum, item) => {
-    const vPrice = item.product?.variants.find((v) => v.label === item.variantLabel)?.priceCents || item.product?.priceCents || 0;
-    return sum + (vPrice * item.quantity);
+    return sum + (item.isQuantityValid ? item.variant.priceCents * item.quantity : 0);
   }, 0);
+  const hasStockIssue = hasBlockingCartStockIssue(cartItems);
 
   const currentCouponResult = useMemo(() => {
     if (!appliedCoupon) return null;
@@ -94,8 +102,8 @@ export default function CartPage() {
   const discountCents = currentCouponResult?.valid ? currentCouponResult.discountCents : 0;
   const isCouponFreeShipping = currentCouponResult?.valid && currentCouponResult.isFreeShipping;
 
-  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? 150000;
-  const standardShippingFee = storeConfig?.shippingFeeCents ?? 8900;
+  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? Number.POSITIVE_INFINITY;
+  const standardShippingFee = storeConfig?.shippingFeeCents ?? 0;
   const shippingFee = (rawSubtotalCents >= freeThreshold || rawSubtotalCents === 0 || isCouponFreeShipping) ? 0 : standardShippingFee;
   const finalTotalCents = Math.max(0, rawSubtotalCents - discountCents) + shippingFee;
 
@@ -122,6 +130,16 @@ export default function CartPage() {
 
   if (loading) return null;
 
+  if (loadError) {
+    return (
+      <main className="checkout-empty" style={{ textAlign: 'center', padding: '5rem 1rem' }}>
+        <h1>Sepet bilgileri şu anda yüklenemiyor.</h1>
+        <p>Lütfen kısa süre sonra tekrar deneyin.</p>
+        <a className="button" href="/" style={{ marginTop: '2rem', display: 'inline-block' }}>Ana Sayfaya Dön →</a>
+      </main>
+    );
+  }
+
   return (
     <div className="cartpage-shell">
       <header className="store-header">
@@ -140,6 +158,7 @@ export default function CartPage() {
           </div>
 
           <div className="cartpage-items-wrapper">
+            {stockNotice && <p className="cart-stock-notice" role="status">{stockNotice}</p>}
             {cartItems.length > 0 ? (
               <table className="cartpage-table">
                 <thead>
@@ -153,22 +172,31 @@ export default function CartPage() {
                 </thead>
                 <tbody>
                   {cartItems.map((item, idx) => {
-                    const price = item.product.variants.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents;
+                    const price = item.variant.priceCents;
                     return (
-                      <tr key={idx}>
+                      <tr key={idx} className={!item.isAvailable ? 'cart-row-unavailable' : ''}>
                         <td className="cp-td-product">
                           <img src={item.product.imageUrl} alt={item.product.name} />
                           <div className="cp-product-info">
                             <small>MOOİ BUTİK</small>
                             <h4>{item.product.name} - {item.variantLabel.toUpperCase()}</h4>
+                            {!item.isAvailable && (
+                              <p className="cart-stock-warning">Bu ürün şu anda stokta bulunmuyor.</p>
+                            )}
+                            {item.isAvailable && item.stock <= 3 && (
+                              <p className="cart-low-stock">En fazla {item.stock} adet mevcut.</p>
+                            )}
                             <button className="cp-order-note-btn">Sipariş Notu</button>
                           </div>
                         </td>
                         <td className="cp-td-qty">
                           <div className="cp-qty-controls">
-                            <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity - 1)}>-</button>
+                            <button onClick={() => updateQty(item, item.quantity - 1)}>-</button>
                             <span>{item.quantity}</span>
-                            <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity + 1)}>+</button>
+                            <button
+                              onClick={() => updateQty(item, item.quantity + 1)}
+                              disabled={!item.isAvailable || item.quantity >= item.stock}
+                            >+</button>
                           </div>
                         </td>
                         <td className="cp-td-price">
@@ -178,7 +206,7 @@ export default function CartPage() {
                           {fmt.format((price * item.quantity) / 100)}
                         </td>
                         <td className="cp-td-action">
-                          <button onClick={() => updateQty(item.productId, item.variantLabel, 0)} aria-label="Sil">
+                          <button onClick={() => updateQty(item, 0)} aria-label="Sil">
                             <TrashIcon />
                           </button>
                         </td>
@@ -225,7 +253,19 @@ export default function CartPage() {
             </div>
           </div>
 
-          <a href="/odeme" className="cp-checkout-button" onClick={(e) => { if(cartItems.length === 0) e.preventDefault(); }}>SATIN AL</a>
+          {hasStockIssue && (
+            <p className="cart-checkout-warning" role="alert">
+              Stokta olmayan ürünleri kaldırmadan ödeme adımına geçemezsiniz.
+            </p>
+          )}
+          <a
+            href="/odeme"
+            className={`cp-checkout-button ${hasStockIssue ? 'disabled' : ''}`}
+            aria-disabled={cartItems.length === 0 || hasStockIssue}
+            onClick={(event) => {
+              if (cartItems.length === 0 || hasStockIssue) event.preventDefault();
+            }}
+          >SATIN AL</a>
           
           <button className="cp-coupon-toggle" onClick={() => setCouponOpen(true)}>Kupon Kodu Ekle <span>{'>'}</span></button>
         </div>

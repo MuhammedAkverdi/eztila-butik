@@ -6,7 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "catalog:import:dry-run": "node scripts/import-catalog.mjs --dry-run",
+    "catalog:import": "node scripts/import-catalog.mjs",
+    "catalog:verify-public": "node scripts/verify-catalog-public.mjs",
+    "inventory:update": "node scripts/update-inventory.mjs",
+    "inventory:test": "node scripts/update-inventory.mjs --self-test",
+    "stock:test": "node scripts/test-stock-behavior.mjs",
+    "stock:verify-public": "node scripts/verify-stock-public.mjs",
+    "discovery:test": "node scripts/test-catalog-discovery.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",
