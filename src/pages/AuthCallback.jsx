@@ -16,58 +16,68 @@ export default function AuthCallback() {
     (async () => {
       try {
         const supabase = await getSupabaseClient();
+        let sessionUser = null;
 
-        // Handle hash fragment from Supabase auth (fallback/legacy)
+        // 1. Manually parse the URL to guarantee we get the code parameter
+        const urlParams = new URL(window.location.href).searchParams;
+        const code = urlParams.get('code');
+        const nextUrl = urlParams.get('next') || '/';
+
+        if (code) {
+          // Explicitly exchange the code
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          sessionUser = data?.user;
+        }
+
+        // 2. Fallback: Check hash fragment for implicit flow
         const hash = window.location.hash;
-        if (hash) {
+        if (!sessionUser && hash) {
           const hashParams = new URLSearchParams(hash.substring(1));
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
           const type = hashParams.get('type');
 
           if (accessToken && refreshToken) {
-            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            if (error) throw error;
+            sessionUser = data?.user;
           }
 
-          // Handle password recovery
-          if (type === 'recovery') {
-            const { data } = await supabase.auth.getUser();
-            if (data.user) {
-              sessionStorage.setItem(PASSWORD_RECOVERY_KEY, JSON.stringify({
-                userId: data.user.id,
-                createdAt: Date.now(),
-              }));
-            }
-            window.location.replace(next.includes('new-password') ? next : '/giris?mode=new-password');
+          if (type === 'recovery' && sessionUser) {
+            sessionStorage.setItem(PASSWORD_RECOVERY_KEY, JSON.stringify({
+              userId: sessionUser.id,
+              createdAt: Date.now(),
+            }));
+            window.location.replace(nextUrl.includes('new-password') ? nextUrl : '/giris?mode=new-password');
             return;
           }
         }
 
-        // Apply saved consent data from signup
-        try {
-          await applySavedConsent(supabase);
-        } catch {
-          // Consent application is best-effort
+        // 3. Fallback: If no code or hash, check if already logged in
+        if (!sessionUser) {
+          const { data } = await supabase.auth.getUser();
+          sessionUser = data?.user;
         }
 
-        // Await the automatic PKCE code exchange initiated by getSupabaseClient()
-        await supabase.auth.getSession();
-
-        const { data } = await supabase.auth.getUser();
-        if (data.user) {
+        if (sessionUser) {
+          // Attempt consent application silently
+          try { await applySavedConsent(supabase); } catch {}
+          
           setStatus('success');
           setMessage('Hesabın doğrulandı! Yönlendiriliyorsun…');
-          window.setTimeout(() => window.location.replace(next), 800);
+          window.setTimeout(() => window.location.replace(nextUrl), 800);
         } else {
           setStatus('error');
           setMessage('Doğrulama bağlantısı geçersiz veya süresi dolmuş.');
         }
-      } catch {
+      } catch (err) {
+        console.error('AuthCallback error:', err);
         setStatus('error');
         setMessage('Bir hata oluştu. Lütfen tekrar dene.');
       }
     })();
-  }, [next]);
+  }, []);
 
   return (
     <div className="auth-callback">
