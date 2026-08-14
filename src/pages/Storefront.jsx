@@ -73,8 +73,8 @@ export default function Storefront() {
 
   useEffect(() => {
     Promise.all([
-      fetch('https://eztila-butik.rexkar.chatgpt.site/api/products'),
-      fetch('https://eztila-butik.rexkar.chatgpt.site/api/store-config'),
+      fetch('/api/products'),
+      fetch('/api/store-config'),
       authFetch('/api/account'),
     ]).then(async ([pRes, sRes, aRes]) => ({
       products: (await pRes.json()).products || [],

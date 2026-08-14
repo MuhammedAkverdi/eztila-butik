@@ -136,7 +136,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     Promise.all([
-      fetch('https://eztila-butik.rexkar.chatgpt.site/api/products'),
+      fetch('/api/products'),
       authFetch('/api/account'),
     ]).then(async ([pRes, aRes]) => {
       const pData = await pRes.json().catch(() => ({ products: [] }));

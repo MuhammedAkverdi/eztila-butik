@@ -1,9 +1,6 @@
 import { getSupabaseClient } from './supabase';
 
 export async function authFetch(url, options = {}) {
-  if (url.startsWith('/api')) {
-    url = 'https://eztila-butik.rexkar.chatgpt.site' + url;
-  }
   const supabase = await getSupabaseClient();
 
   const doFetch = async (token) => {

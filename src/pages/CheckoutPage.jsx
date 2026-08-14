@@ -60,7 +60,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('https://eztila-butik.rexkar.chatgpt.site/api/products'),
+      fetch('/api/products'),
       authFetch('/api/account'),
       getAuthConfig().catch(() => ({ googleEnabled: false })),
     ]).then(async ([pRes, aRes, authCfg]) => {
