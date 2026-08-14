@@ -17,16 +17,6 @@ export default function AuthCallback() {
       try {
         const supabase = await getSupabaseClient();
 
-        // Handle PKCE code flow from OAuth
-        const code = params.get('code');
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            console.error('Code exchange failed:', error.message);
-            throw error;
-          }
-        }
-
         // Handle hash fragment from Supabase auth (fallback/legacy)
         const hash = window.location.hash;
         if (hash) {
@@ -59,6 +49,9 @@ export default function AuthCallback() {
         } catch {
           // Consent application is best-effort
         }
+
+        // Await the automatic PKCE code exchange initiated by getSupabaseClient()
+        await supabase.auth.getSession();
 
         const { data } = await supabase.auth.getUser();
         if (data.user) {

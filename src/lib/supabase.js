@@ -12,7 +12,7 @@ export async function getSupabaseClient() {
         flowType: 'pkce',
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
+        detectSessionInUrl: true,
       },
     }
   );
