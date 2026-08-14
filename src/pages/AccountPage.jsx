@@ -134,10 +134,7 @@ export default function AccountPage() {
   async function loadAccount() {
     try {
       const res = await authFetch('/api/account');
-      if (res.status === 401) { 
-        setErrorMsg('Yetkisiz giriş (401). Lütfen tekrar giriş yapın (Vercel Proxy bypass test).'); 
-        return; 
-      }
+      if (res.status === 401) { window.location.replace('/giris'); return; }
       if (!res.ok) throw new Error('Hesap bilgileri alınamadı.');
       setAccount(await res.json());
       setErrorMsg('');
