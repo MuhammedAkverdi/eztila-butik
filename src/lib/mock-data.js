@@ -3,9 +3,9 @@ export const MOCK_PRODUCTS = [
     "id": "57ea2b0c-7452-48cf-993f-349a146307d7",
     "sourceId": "57ea2b0c-7452-48cf-993f-349a146307d7",
     "slug": "aksesuarli-buzzy-simli-etek-takim",
-    "name": "AKSESUARLI BUZZY SÄ°MLÄ° ETEK TAKIM",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "AKSESUARLI BUZZY SÄ°MLÄ° ETEK TAKIM Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "AKSESUARLI BUZZY SİMLİ ETEK TAKIM",
+    "category": "Alt - Üst Takım",
+    "description": "AKSESUARLI BUZZY SİMLİ ETEK TAKIM · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e06668ab-b7b1-4d61-800f-04118706dc38/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e06668ab-b7b1-4d61-800f-04118706dc38/image_1080.webp",
@@ -44,9 +44,9 @@ export const MOCK_PRODUCTS = [
     "id": "2e7263ac-12da-42c9-b979-112921a70e63",
     "sourceId": "2e7263ac-12da-42c9-b979-112921a70e63",
     "slug": "aksesuarli-kadife-elbise",
-    "name": "AKSESUARLI KADÄ°FE ELBÄ°SE",
+    "name": "AKSESUARLI KADİFE ELBİSE",
     "category": "Abiye & Mezuniyet Elbisesi",
-    "description": "AKSESUARLI KADÄ°FE ELBÄ°SE Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "AKSESUARLI KADİFE ELBİSE · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b6c1783b-7975-41c2-bef6-b731e292e8d9/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b6c1783b-7975-41c2-bef6-b731e292e8d9/image_1080.webp",
@@ -106,9 +106,9 @@ export const MOCK_PRODUCTS = [
     "id": "24c7736c-f64a-4e66-9c36-e6c32a0ebbe9",
     "sourceId": "24c7736c-f64a-4e66-9c36-e6c32a0ebbe9",
     "slug": "aksesuarli-degaje-yaka-bluz",
-    "name": "AksesuarlÄ± Degaje Yaka Bluz",
+    "name": "Aksesuarlı Degaje Yaka Bluz",
     "category": "Bluz",
-    "description": "AksesuarlÄ± Degaje Yaka Bluz Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Aksesuarlı Degaje Yaka Bluz · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c3877a98-d4c5-4f71-81ad-fd7467bd014a/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c3877a98-d4c5-4f71-81ad-fd7467bd014a/image_1080.webp",
@@ -153,7 +153,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "4bfd2dd4-8962-4e28-9928-cdcfec741f30",
-        "label": "kÄ±rmÄ±zÄ± / s",
+        "label": "kırmızı / s",
         "stock": 10,
         "priceCents": 83000
       },
@@ -171,7 +171,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "e453110b-c284-4f9d-bcae-9cbaad22306f",
-        "label": "kÄ±rmÄ±zÄ± / l",
+        "label": "kırmızı / l",
         "stock": 10,
         "priceCents": 83000
       },
@@ -183,7 +183,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "345e2d94-fe41-40fb-b815-57e676f0e20d",
-        "label": "kÄ±rmÄ±zÄ± / m",
+        "label": "kırmızı / m",
         "stock": 10,
         "priceCents": 83000
       },
@@ -206,9 +206,9 @@ export const MOCK_PRODUCTS = [
     "id": "4b00a129-6a0e-4259-92f8-c243c02701cc",
     "sourceId": "4b00a129-6a0e-4259-92f8-c243c02701cc",
     "slug": "bel-baglamali-buzgu-detayli-alt-ust-gomlek-takim",
-    "name": "Bel BaÄŸlamalÄ± BÃ¼zgÃ¼ DetaylÄ± Alt Ãœst GÃ¶mlek TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "Bel BaÄŸlamalÄ± BÃ¼zgÃ¼ DetaylÄ± Alt Ãœst GÃ¶mlek TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Bel Bağlamalı Büzgü Detaylı Alt Üst Gömlek Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Bel Bağlamalı Büzgü Detaylı Alt Üst Gömlek Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c8c4dd93-5f1c-4ce6-9bc8-a288814ba464/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c8c4dd93-5f1c-4ce6-9bc8-a288814ba464/image_1080.webp",
@@ -235,13 +235,13 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "d2e5dfc4-a0f5-44b3-b9ba-e88cf79e711b",
-        "label": "yeÅŸil / s",
+        "label": "yeşil / s",
         "stock": 10,
         "priceCents": 169999
       },
       {
         "id": "1bc534cc-9018-4310-9e00-f62a7924cf62",
-        "label": "yeÅŸil / m",
+        "label": "yeşil / m",
         "stock": 10,
         "priceCents": 169999
       },
@@ -271,7 +271,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "836688b2-cc90-41a1-a5b7-a4474fbe5c7a",
-        "label": "acÄ± kahverengi / l",
+        "label": "acı kahverengi / l",
         "stock": 0,
         "priceCents": 169999
       },
@@ -283,7 +283,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "5d057185-edec-4282-8184-9255ed68cf91",
-        "label": "yeÅŸil / l",
+        "label": "yeşil / l",
         "stock": 10,
         "priceCents": 169999
       },
@@ -312,9 +312,9 @@ export const MOCK_PRODUCTS = [
     "id": "f4c08da6-d199-481f-acdb-3cc7c82e689f",
     "sourceId": "f4c08da6-d199-481f-acdb-3cc7c82e689f",
     "slug": "bersh-model-ekose-desen-bel-fular-detayli-yuksek-bel-pantolon",
-    "name": "Bersh Model Ekose Desen Bel Fular DetaylÄ± YÃ¼ksek Bel Pantolon",
+    "name": "Bersh Model Ekose Desen Bel Fular Detaylı Yüksek Bel Pantolon",
     "category": "Pantolon",
-    "description": "Bersh Model Ekose Desen Bel Fular DetaylÄ± YÃ¼ksek Bel Pantolon Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Bersh Model Ekose Desen Bel Fular Detaylı Yüksek Bel Pantolon · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/24b0d90a-60be-4055-af1d-0e0e9bcd76b4/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/24b0d90a-60be-4055-af1d-0e0e9bcd76b4/image_1080.webp",
@@ -394,9 +394,9 @@ export const MOCK_PRODUCTS = [
     "id": "06c5899d-294c-4512-baa8-45e5078260d0",
     "sourceId": "06c5899d-294c-4512-baa8-45e5078260d0",
     "slug": "drapelitasli-tul-elbise",
-    "name": "DRAPELÄ°TAÅLI TÃœL ELBÄ°SE",
+    "name": "DRAPELİTAŞLI TÜL ELBİSE",
     "category": "Abiye & Mezuniyet Elbisesi",
-    "description": "DRAPELÄ°TAÅLI TÃœL ELBÄ°SE Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "DRAPELİTAŞLI TÜL ELBİSE · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/a32a21bd-841b-4fa8-a57f-4c80aff9fe71/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/a32a21bd-841b-4fa8-a57f-4c80aff9fe71/image_1080.webp",
@@ -456,9 +456,9 @@ export const MOCK_PRODUCTS = [
     "id": "dffed7ca-d79c-49ab-b858-32f0a6ca4333",
     "sourceId": "dffed7ca-d79c-49ab-b858-32f0a6ca4333",
     "slug": "dantel-detayli-derin-dekolte-elbise",
-    "name": "Dantel DetaylÄ± Derin Dekolte Elbise",
+    "name": "Dantel Detaylı Derin Dekolte Elbise",
     "category": "Elbise",
-    "description": "Dantel DetaylÄ± Derin Dekolte Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Dantel Detaylı Derin Dekolte Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e4c24bc6-4527-4347-b822-a3db586ceeb7/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e4c24bc6-4527-4347-b822-a3db586ceeb7/image_1080.webp",
@@ -520,9 +520,9 @@ export const MOCK_PRODUCTS = [
     "id": "0d4fb7d8-7b45-4478-b3aa-0945c0f72af1",
     "sourceId": "0d4fb7d8-7b45-4478-b3aa-0945c0f72af1",
     "slug": "degaje-yaka-saten-mini-elbise",
-    "name": "Degaje Yaka Saten MiÌ‡niÌ‡ ElbiÌ‡se",
+    "name": "Degaje Yaka Saten Mi̇ni̇ Elbi̇se",
     "category": "Abiye & Mezuniyet Elbisesi",
-    "description": "Degaje Yaka Saten MiÌ‡niÌ‡ ElbiÌ‡se Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Degaje Yaka Saten Mi̇ni̇ Elbi̇se · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/721947f7-a73a-45e9-9694-33a30e1a7205/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/721947f7-a73a-45e9-9694-33a30e1a7205/image_1080.webp",
@@ -582,9 +582,9 @@ export const MOCK_PRODUCTS = [
     "id": "2d4cb49a-a775-4ce2-a9af-ec7b12659543",
     "sourceId": "2d4cb49a-a775-4ce2-a9af-ec7b12659543",
     "slug": "ekose-mini-gomlek-jile-elbise",
-    "name": "Ekose Mini GÃ¶mlek Jile Elbise",
+    "name": "Ekose Mini Gömlek Jile Elbise",
     "category": "Elbise",
-    "description": "Ekose Mini GÃ¶mlek Jile Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Ekose Mini Gömlek Jile Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e2182c13-80a0-4f59-ad7f-9c81b2a0a63b/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e2182c13-80a0-4f59-ad7f-9c81b2a0a63b/image_1080.webp",
@@ -682,9 +682,9 @@ export const MOCK_PRODUCTS = [
     "id": "b9fa3bc1-8d47-47fb-9870-74c81f506bad",
     "sourceId": "b9fa3bc1-8d47-47fb-9870-74c81f506bad",
     "slug": "firfirli-volanli-gomlek",
-    "name": "FIRFIRLI VOLANLI GÃ–MLEK",
-    "category": "GÃ¶mlek",
-    "description": "FIRFIRLI VOLANLI GÃ–MLEK Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "FIRFIRLI VOLANLI GÖMLEK",
+    "category": "Gömlek",
+    "description": "FIRFIRLI VOLANLI GÖMLEK · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/42ec63b1-264d-47ff-9914-17cfe97ec8d9/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/42ec63b1-264d-47ff-9914-17cfe97ec8d9/image_1080.webp",
@@ -703,7 +703,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "113285a7-1af8-470b-8345-0e55adb212e8",
-        "label": "mÃ¼rdÃ¼m / l",
+        "label": "mürdüm / l",
         "stock": 0,
         "priceCents": 94664
       },
@@ -715,7 +715,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "e7629fc6-4c03-4370-992a-4e91dadd6398",
-        "label": "mÃ¼rdÃ¼m / s",
+        "label": "mürdüm / s",
         "stock": 0,
         "priceCents": 94664
       },
@@ -727,7 +727,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "06a51540-5237-4a76-83cc-c456766bd3bb",
-        "label": "mÃ¼rdÃ¼m / m",
+        "label": "mürdüm / m",
         "stock": 0,
         "priceCents": 94664
       }
@@ -744,9 +744,9 @@ export const MOCK_PRODUCTS = [
     "id": "f31e28ad-3249-42f7-a2d7-c245fa49595a",
     "sourceId": "f31e28ad-3249-42f7-a2d7-c245fa49595a",
     "slug": "garnili-meloni-seritli-elbise",
-    "name": "GARNÄ°LÄ° MELONÄ° ÅERÄ°TLÄ° ELBÄ°SE",
+    "name": "GARNİLİ MELONİ ŞERİTLİ ELBİSE",
     "category": "Elbise",
-    "description": "GARNÄ°LÄ° MELONÄ° ÅERÄ°TLÄ° ELBÄ°SE Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "GARNİLİ MELONİ ŞERİTLİ ELBİSE · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e8c66580-b5ce-43fb-838d-cff01b5f2e71/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/e8c66580-b5ce-43fb-838d-cff01b5f2e71/image_1080.webp",
@@ -806,9 +806,9 @@ export const MOCK_PRODUCTS = [
     "id": "d6e9705c-c574-46cb-b772-a341bdd625cc",
     "sourceId": "d6e9705c-c574-46cb-b772-a341bdd625cc",
     "slug": "garneli-meloni-takim",
-    "name": "Garneli Meloni TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "Garneli Meloni TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Garneli Meloni Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Garneli Meloni Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/fe1007f8-0c39-492b-be98-f859d07a57ec/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/fe1007f8-0c39-492b-be98-f859d07a57ec/image_1080.webp",
@@ -888,9 +888,9 @@ export const MOCK_PRODUCTS = [
     "id": "9a15a303-ed03-490a-989b-28ca8c460be2",
     "sourceId": "9a15a303-ed03-490a-989b-28ca8c460be2",
     "slug": "gomlek-yaka-gizli-fermuarli-kendinden-kemerli-maxi-boy-poliviskon-elbise",
-    "name": "GÃ¶mlek Yaka Gizli FermuarlÄ± Kendinden Kemerli Maxi Boy Poliviskon Elbise",
+    "name": "Gömlek Yaka Gizli Fermuarlı Kendinden Kemerli Maxi Boy Poliviskon Elbise",
     "category": "Elbise",
-    "description": "GÃ¶mlek Yaka Gizli FermuarlÄ± Kendinden Kemerli Maxi Boy Poliviskon Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Gömlek Yaka Gizli Fermuarlı Kendinden Kemerli Maxi Boy Poliviskon Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b267ccf6-8c17-46ab-ab5d-f7c4f93eee5d/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b267ccf6-8c17-46ab-ab5d-f7c4f93eee5d/image_1080.webp",
@@ -952,9 +952,9 @@ export const MOCK_PRODUCTS = [
     "id": "4cc5b14b-3375-4ef2-ae65-3850b845c34a",
     "sourceId": "4cc5b14b-3375-4ef2-ae65-3850b845c34a",
     "slug": "kadin-fularli-taycan-gomlek-havuc-pantolon-takim",
-    "name": "KADIN FULARLI TAYCAN GÃ–MLEK HAVUÃ‡ PANTOLON TAKIM",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "KADIN FULARLI TAYCAN GÃ–MLEK HAVUÃ‡ PANTOLON TAKIM Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "KADIN FULARLI TAYCAN GÖMLEK HAVUÇ PANTOLON TAKIM",
+    "category": "Alt - Üst Takım",
+    "description": "KADIN FULARLI TAYCAN GÖMLEK HAVUÇ PANTOLON TAKIM · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/f5595db0-5fe4-4b29-b14c-3da73997399c/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/f5595db0-5fe4-4b29-b14c-3da73997399c/image_1080.webp",
@@ -996,9 +996,9 @@ export const MOCK_PRODUCTS = [
     "id": "93903fd1-e1dc-4d3c-9571-23bdab733516",
     "sourceId": "93903fd1-e1dc-4d3c-9571-23bdab733516",
     "slug": "kadin-buzgulu-selanik-elbise",
-    "name": "KadÄ±n BÃ¼zgÃ¼lÃ¼ Selanik Elbise",
+    "name": "Kadın Büzgülü Selanik Elbise",
     "category": "Elbise",
-    "description": "KadÄ±n BÃ¼zgÃ¼lÃ¼ Selanik Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kadın Büzgülü Selanik Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1f314260-0c9a-48b3-a293-d8ac2568682b/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1f314260-0c9a-48b3-a293-d8ac2568682b/image_1080.webp",
@@ -1078,9 +1078,9 @@ export const MOCK_PRODUCTS = [
     "id": "c0b1ee61-6135-4b2d-a727-c9f15cb3b94a",
     "sourceId": "c0b1ee61-6135-4b2d-a727-c9f15cb3b94a",
     "slug": "kadin-gogus-dekolteli-ajurlu-uzun-elbise",
-    "name": "KadÄ±n GÃ¶ÄŸÃ¼s Dekolteli Ajurlu Uzun Elbise",
+    "name": "Kadın Göğüs Dekolteli Ajurlu Uzun Elbise",
     "category": "Plaj Elbisesi",
-    "description": "KadÄ±n GÃ¶ÄŸÃ¼s Dekolteli Ajurlu Uzun Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kadın Göğüs Dekolteli Ajurlu Uzun Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/cce19924-a33e-4ee9-82ef-afd750899b96/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/cce19924-a33e-4ee9-82ef-afd750899b96/image_1080.webp",
@@ -1095,7 +1095,7 @@ export const MOCK_PRODUCTS = [
     "variants": [
       {
         "id": "676332c1-2d8c-48ce-a2eb-9193d4654c8e",
-        "label": "sarÄ± / standart",
+        "label": "sarı / standart",
         "stock": 10,
         "priceCents": 155000
       },
@@ -1124,9 +1124,9 @@ export const MOCK_PRODUCTS = [
     "id": "c583a9f0-d075-4abb-a1fc-1613f4a5af18",
     "sourceId": "c583a9f0-d075-4abb-a1fc-1613f4a5af18",
     "slug": "kadin-kahverengi-parlak-tas-baski-detayli-alt-ust-sik-takim",
-    "name": "KadÄ±n Kahverengi Parlak TaÅŸ BaskÄ± DetaylÄ± Alt Ãœst ÅÄ±k TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "KadÄ±n Kahverengi Parlak TaÅŸ BaskÄ± DetaylÄ± Alt Ãœst ÅÄ±k TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Kadın Kahverengi Parlak Taş Baskı Detaylı Alt Üst Şık Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Kadın Kahverengi Parlak Taş Baskı Detaylı Alt Üst Şık Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/fe740a40-861c-489d-9291-a7dce87c6f0c/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/fe740a40-861c-489d-9291-a7dce87c6f0c/image_1080.webp",
@@ -1230,9 +1230,9 @@ export const MOCK_PRODUCTS = [
     "id": "dcf1a869-9bb2-42b1-94a9-1b5c5a94b03c",
     "sourceId": "dcf1a869-9bb2-42b1-94a9-1b5c5a94b03c",
     "slug": "kadin-kemerli-ekose-etek",
-    "name": "KadÄ±n Kemerli Ekose Etek",
+    "name": "Kadın Kemerli Ekose Etek",
     "category": "Etek",
-    "description": "KadÄ±n Kemerli Ekose Etek Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kadın Kemerli Ekose Etek · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/edd618cf-0519-425f-997e-e4e7c9e04427/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/edd618cf-0519-425f-997e-e4e7c9e04427/image_1080.webp",
@@ -1312,9 +1312,9 @@ export const MOCK_PRODUCTS = [
     "id": "5a2fb8f2-32cb-41b0-9abc-a2300661e9ec",
     "sourceId": "5a2fb8f2-32cb-41b0-9abc-a2300661e9ec",
     "slug": "kadin-tokali-gogus-detayli-sandy-uzun-kollu-bluz",
-    "name": "KadÄ±n TokalÄ± GÃ¶ÄŸÃ¼s DetaylÄ± Sandy Uzun Kollu Bluz",
+    "name": "Kadın Tokalı Göğüs Detaylı Sandy Uzun Kollu Bluz",
     "category": "Bluz",
-    "description": "KadÄ±n TokalÄ± GÃ¶ÄŸÃ¼s DetaylÄ± Sandy Uzun Kollu Bluz Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kadın Tokalı Göğüs Detaylı Sandy Uzun Kollu Bluz · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/46c53e70-13d4-47be-963f-6c90a7af8941/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/46c53e70-13d4-47be-963f-6c90a7af8941/image_1080.webp",
@@ -1432,7 +1432,7 @@ export const MOCK_PRODUCTS = [
     "slug": "kemerli-dantel-detay-elbise",
     "name": "Kemerli Dantel Detay Elbise",
     "category": "Elbise",
-    "description": "Kemerli Dantel Detay Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kemerli Dantel Detay Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/123a134b-2575-47f9-8435-ffe352bac9e4/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/123a134b-2575-47f9-8435-ffe352bac9e4/image_1080.webp",
@@ -1492,9 +1492,9 @@ export const MOCK_PRODUCTS = [
     "id": "0cecbce9-6370-47f2-af03-f7d1e54cb7db",
     "sourceId": "0cecbce9-6370-47f2-af03-f7d1e54cb7db",
     "slug": "kolu-dantel-detayli-oversize-t-shirt-bluz",
-    "name": "Kolu Dantel DetaylÄ± Oversize T-Shirt Bluz",
+    "name": "Kolu Dantel Detaylı Oversize T-Shirt Bluz",
     "category": "T-Shirt",
-    "description": "Kolu Dantel DetaylÄ± Oversize T-Shirt Bluz Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Kolu Dantel Detaylı Oversize T-Shirt Bluz · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/7fb68119-f292-43a8-a3d2-8b1a7b80bc25/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/7fb68119-f292-43a8-a3d2-8b1a7b80bc25/image_1080.webp",
@@ -1576,7 +1576,7 @@ export const MOCK_PRODUCTS = [
     "slug": "mng-model-asimetrik-degaje-yaka-elbise",
     "name": "MNG Model Asimetrik Degaje Yaka Elbise",
     "category": "Elbise",
-    "description": "MNG Model Asimetrik Degaje Yaka Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "MNG Model Asimetrik Degaje Yaka Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/456b4bfe-de56-4e11-9ebd-530dde03a072/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/456b4bfe-de56-4e11-9ebd-530dde03a072/image_1080.webp",
@@ -1618,9 +1618,9 @@ export const MOCK_PRODUCTS = [
     "id": "1d75a584-ce4f-40d1-9a52-d06fb51be776",
     "sourceId": "1d75a584-ce4f-40d1-9a52-d06fb51be776",
     "slug": "modal-tasli-bisiklet-yaka-t-shirt-pantolon-takim",
-    "name": "MODAL TAÅLI BÄ°SÄ°KLET YAKA T-SHÄ°RT PANTOLON TAKIM",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "MODAL TAÅLI BÄ°SÄ°KLET YAKA T-SHÄ°RT PANTOLON TAKIM Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "MODAL TAŞLI BİSİKLET YAKA T-SHİRT PANTOLON TAKIM",
+    "category": "Alt - Üst Takım",
+    "description": "MODAL TAŞLI BİSİKLET YAKA T-SHİRT PANTOLON TAKIM · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/412f1827-2239-4426-9e02-c7a22a3d2d56/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/412f1827-2239-4426-9e02-c7a22a3d2d56/image_1080.webp",
@@ -1668,7 +1668,7 @@ export const MOCK_PRODUCTS = [
     "slug": "puantiyeli-degaje-yaka-elbise",
     "name": "Puantiyeli Degaje Yaka Elbise",
     "category": "Elbise",
-    "description": "Puantiyeli Degaje Yaka Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Puantiyeli Degaje Yaka Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c275ae98-2d7c-4e21-90ae-e035a755a0ed/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/c275ae98-2d7c-4e21-90ae-e035a755a0ed/image_1080.webp",
@@ -1748,9 +1748,9 @@ export const MOCK_PRODUCTS = [
     "id": "604e30b8-3254-4ab2-858f-2fc91b4238df",
     "sourceId": "604e30b8-3254-4ab2-858f-2fc91b4238df",
     "slug": "tasli-kolsuz-lastikli-yelek-pantolon-alt-ust-takim",
-    "name": "TAÅLI KOLSUZ LASTÄ°KLÄ° YELEK PANTOLON ALT ÃœST TAKIM",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "TAÅLI KOLSUZ LASTÄ°KLÄ° YELEK PANTOLON ALT ÃœST TAKIM Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "TAŞLI KOLSUZ LASTİKLİ YELEK PANTOLON ALT ÜST TAKIM",
+    "category": "Alt - Üst Takım",
+    "description": "TAŞLI KOLSUZ LASTİKLİ YELEK PANTOLON ALT ÜST TAKIM · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/d0f052fb-4636-4230-bcc8-2eed0129e515/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/d0f052fb-4636-4230-bcc8-2eed0129e515/image_1080.webp",
@@ -1836,9 +1836,9 @@ export const MOCK_PRODUCTS = [
     "id": "fca02ccc-2311-434a-ae66-f4c81b139bda",
     "sourceId": "fca02ccc-2311-434a-ae66-f4c81b139bda",
     "slug": "tasli-crop-pantolon-takim",
-    "name": "TaÅŸlÄ± Crop Pantolon TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "TaÅŸlÄ± Crop Pantolon TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Taşlı Crop Pantolon Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Taşlı Crop Pantolon Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/119c61d5-63a9-48a0-b5d4-fbf137200ca8/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/119c61d5-63a9-48a0-b5d4-fbf137200ca8/image_1080.webp",
@@ -1877,9 +1877,9 @@ export const MOCK_PRODUCTS = [
     "id": "f5ca765a-e9af-466a-b3d2-c56e2acf8acd",
     "sourceId": "f5ca765a-e9af-466a-b3d2-c56e2acf8acd",
     "slug": "tasli-kolsuz-bel-lastikli-yelek-pantolon-alt-ust-takim",
-    "name": "TaÅŸlÄ± Kolsuz Bel Lastikli Yelek Pantolon Alt Ãœst TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "TaÅŸlÄ± Kolsuz Bel Lastikli Yelek Pantolon Alt Ãœst TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Taşlı Kolsuz Bel Lastikli Yelek Pantolon Alt Üst Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Taşlı Kolsuz Bel Lastikli Yelek Pantolon Alt Üst Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/d29cbb3a-40df-4464-adf1-a249a4a0454e/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/d29cbb3a-40df-4464-adf1-a249a4a0454e/image_1080.webp",
@@ -1977,9 +1977,9 @@ export const MOCK_PRODUCTS = [
     "id": "5cd5f73e-97d9-4be9-9a61-ed0926191858",
     "sourceId": "5cd5f73e-97d9-4be9-9a61-ed0926191858",
     "slug": "tasli-tul-asimetrik-etek",
-    "name": "TaÅŸlÄ± TÃ¼l Asimetrik Etek",
+    "name": "Taşlı Tül Asimetrik Etek",
     "category": "Etek",
-    "description": "TaÅŸlÄ± TÃ¼l Asimetrik Etek Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Taşlı Tül Asimetrik Etek · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/49730d97-7d4e-4e67-a3ab-8876877b2f59/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/49730d97-7d4e-4e67-a3ab-8876877b2f59/image_1080.webp",
@@ -2039,9 +2039,9 @@ export const MOCK_PRODUCTS = [
     "id": "a4e05185-f0db-47ed-a989-723ad9fbc691",
     "sourceId": "a4e05185-f0db-47ed-a989-723ad9fbc691",
     "slug": "tasli-tul-bluz",
-    "name": "TaÅŸlÄ± TÃ¼l Bluz",
+    "name": "Taşlı Tül Bluz",
     "category": "Bluz",
-    "description": "TaÅŸlÄ± TÃ¼l Bluz Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Taşlı Tül Bluz · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/06d647ad-cf6b-4fc1-9e38-6b7463021efa/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/06d647ad-cf6b-4fc1-9e38-6b7463021efa/image_1080.webp",
@@ -2101,9 +2101,9 @@ export const MOCK_PRODUCTS = [
     "id": "0eb4a164-0941-4bc6-8d65-715646fa35d4",
     "sourceId": "0eb4a164-0941-4bc6-8d65-715646fa35d4",
     "slug": "yarasa-kol-arkadan-baglamali-elbise",
-    "name": "Yarasa Kol Arkadan BaÄŸlamalÄ± Elbise",
+    "name": "Yarasa Kol Arkadan Bağlamalı Elbise",
     "category": "Elbise",
-    "description": "Yarasa Kol Arkadan BaÄŸlamalÄ± Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Yarasa Kol Arkadan Bağlamalı Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/aeb9d389-f143-4044-b735-e301c7d7e4d9/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/aeb9d389-f143-4044-b735-e301c7d7e4d9/image_1080.webp",
@@ -2185,7 +2185,7 @@ export const MOCK_PRODUCTS = [
     "slug": "zr-model-beyaz-puantiye-desenli-elbise",
     "name": "ZR Model Beyaz Puantiye Desenli Elbise",
     "category": "Elbise",
-    "description": "ZR Model Beyaz Puantiye Desenli Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "ZR Model Beyaz Puantiye Desenli Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/9a5bb820-4bc6-4e3d-a661-4fc3cf32f898/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/9a5bb820-4bc6-4e3d-a661-4fc3cf32f898/image_1080.webp",
@@ -2226,9 +2226,9 @@ export const MOCK_PRODUCTS = [
     "id": "752abbf3-45df-4727-be90-b5624224b1da",
     "sourceId": "752abbf3-45df-4727-be90-b5624224b1da",
     "slug": "zr-model-kisa-balon-kol-bluz-pantolon-alt-ust-takim",
-    "name": "ZR Model KÄ±sa Balon Kol Bluz Pantolon Alt Ãœst TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "ZR Model KÄ±sa Balon Kol Bluz Pantolon Alt Ãœst TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "ZR Model Kısa Balon Kol Bluz Pantolon Alt Üst Takım",
+    "category": "Alt - Üst Takım",
+    "description": "ZR Model Kısa Balon Kol Bluz Pantolon Alt Üst Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1278d711-b0fe-4026-ba9c-c2427ba844ce/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1278d711-b0fe-4026-ba9c-c2427ba844ce/image_1080.webp",
@@ -2326,9 +2326,9 @@ export const MOCK_PRODUCTS = [
     "id": "2b9b0b69-cae0-4e9b-b099-fd97fa9e9983",
     "sourceId": "2b9b0b69-cae0-4e9b-b099-fd97fa9e9983",
     "slug": "zr-model-kisa-kollu-sik-mini-elbise",
-    "name": "ZR Model KÄ±sa Kollu ÅÄ±k Mini Elbise",
+    "name": "ZR Model Kısa Kollu Şık Mini Elbise",
     "category": "Elbise",
-    "description": "ZR Model KÄ±sa Kollu ÅÄ±k Mini Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "ZR Model Kısa Kollu Şık Mini Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1b997c4b-e443-41e6-b6c4-63f9339a735c/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1b997c4b-e443-41e6-b6c4-63f9339a735c/image_1080.webp",
@@ -2349,7 +2349,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "a44e7d17-edb5-4827-a87b-d5579a12893c",
-        "label": "kÄ±rmÄ±zÄ± / m",
+        "label": "kırmızı / m",
         "stock": 10,
         "priceCents": 134900
       },
@@ -2385,13 +2385,13 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "3bbcedbc-dabb-4293-af1c-c07842ca5937",
-        "label": "kÄ±rmÄ±zÄ± / l",
+        "label": "kırmızı / l",
         "stock": 10,
         "priceCents": 134900
       },
       {
         "id": "ac67525c-599c-48d8-9ee4-36e358f03b62",
-        "label": "kÄ±rmÄ±zÄ± / s",
+        "label": "kırmızı / s",
         "stock": 10,
         "priceCents": 134900
       },
@@ -2426,9 +2426,9 @@ export const MOCK_PRODUCTS = [
     "id": "32403ac0-02f5-449c-8d54-4244ac8c9231",
     "sourceId": "32403ac0-02f5-449c-8d54-4244ac8c9231",
     "slug": "zr-model-sirt-fermuarli-dantel-detayli-buzgulu-elbise",
-    "name": "ZR Model SÄ±rt FermuarlÄ± Dantel DetaylÄ± BÃ¼zgÃ¼lÃ¼ Elbise",
+    "name": "ZR Model Sırt Fermuarlı Dantel Detaylı Büzgülü Elbise",
     "category": "Elbise",
-    "description": "ZR Model SÄ±rt FermuarlÄ± Dantel DetaylÄ± BÃ¼zgÃ¼lÃ¼ Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "ZR Model Sırt Fermuarlı Dantel Detaylı Büzgülü Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/ab1987f1-8099-4901-b039-bcedad7c4292/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/ab1987f1-8099-4901-b039-bcedad7c4292/image_1080.webp",
@@ -2490,9 +2490,9 @@ export const MOCK_PRODUCTS = [
     "id": "329ecdee-7ac5-45bf-8ad3-29f3e0caf1db",
     "sourceId": "329ecdee-7ac5-45bf-8ad3-29f3e0caf1db",
     "slug": "zr-model-cicek-desenli-mini-elbise",
-    "name": "ZR Model Ã‡iÃ§ek Desenli Mini Elbise",
+    "name": "ZR Model Çiçek Desenli Mini Elbise",
     "category": "Elbise",
-    "description": "ZR Model Ã‡iÃ§ek Desenli Mini Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "ZR Model Çiçek Desenli Mini Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/95b924f8-898e-4384-8352-fe0dffbbd0c3/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/95b924f8-898e-4384-8352-fe0dffbbd0c3/image_1080.webp",
@@ -2533,9 +2533,9 @@ export const MOCK_PRODUCTS = [
     "id": "9e151f05-0bf2-4836-b361-56c40eebd780",
     "sourceId": "9e151f05-0bf2-4836-b361-56c40eebd780",
     "slug": "iki-iplik-esofman-alti",
-    "name": "Ä°ki Ä°plik EÅŸofman altÄ±",
-    "category": "EÅŸofman AltÄ±",
-    "description": "Ä°ki Ä°plik EÅŸofman altÄ± Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "İki İplik Eşofman altı",
+    "category": "Eşofman Altı",
+    "description": "İki İplik Eşofman altı · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/62f4dedd-9a92-4820-aa19-9ebc65631e6b/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/62f4dedd-9a92-4820-aa19-9ebc65631e6b/image_1080.webp",
@@ -2603,9 +2603,9 @@ export const MOCK_PRODUCTS = [
     "id": "5107c890-17e0-4682-94a0-f39f1fe7df50",
     "sourceId": "5107c890-17e0-4682-94a0-f39f1fe7df50",
     "slug": "iki-iplik-esofman-alti-1",
-    "name": "Ä°ki Ä°plik EÅŸofman altÄ±",
-    "category": "EÅŸofman AltÄ±",
-    "description": "Ä°ki Ä°plik EÅŸofman altÄ± Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "İki İplik Eşofman altı",
+    "category": "Eşofman Altı",
+    "description": "İki İplik Eşofman altı · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/37d8b54b-4433-4558-ba4e-9623500c7cb1/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/37d8b54b-4433-4558-ba4e-9623500c7cb1/image_1080.webp",
@@ -2654,9 +2654,9 @@ export const MOCK_PRODUCTS = [
     "id": "c7e8a3ca-776e-45f1-9151-008200085232",
     "sourceId": "c7e8a3ca-776e-45f1-9151-008200085232",
     "slug": "sal-yakali-garnili-modal-kumas-gunluk-rahat-kadin-esofman-takim",
-    "name": "Åal YakalÄ± Garnili Modal KumaÅŸ GÃ¼nlÃ¼k Rahat KadÄ±n EÅŸofman TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "Åal YakalÄ± Garnili Modal KumaÅŸ GÃ¼nlÃ¼k Rahat KadÄ±n EÅŸofman TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Şal Yakalı Garnili Modal Kumaş Günlük Rahat Kadın Eşofman Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Şal Yakalı Garnili Modal Kumaş Günlük Rahat Kadın Eşofman Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b5de714a-45eb-49ac-b805-0440af630949/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/b5de714a-45eb-49ac-b805-0440af630949/image_1080.webp",
@@ -2683,7 +2683,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "95b04017-ca2a-4eac-8753-437e6de53509",
-        "label": "sarÄ± / m",
+        "label": "sarı / m",
         "stock": 10,
         "priceCents": 125000
       },
@@ -2701,7 +2701,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "9273f85b-be1d-4b4d-965e-17337fb4faa1",
-        "label": "sarÄ± / s",
+        "label": "sarı / s",
         "stock": 10,
         "priceCents": 125000
       },
@@ -2731,7 +2731,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "8a0949b2-87ed-4796-804d-35af85cd58d6",
-        "label": "sarÄ± / l",
+        "label": "sarı / l",
         "stock": 10,
         "priceCents": 125000
       },
@@ -2772,9 +2772,9 @@ export const MOCK_PRODUCTS = [
     "id": "999a1575-b8f1-4bfe-a015-2cbcc292e5cb",
     "sourceId": "999a1575-b8f1-4bfe-a015-2cbcc292e5cb",
     "slug": "sal-yakali-garnili-modal-kumas-kadin-esofman-takim",
-    "name": "Åal YakalÄ± Garnili Modal KumaÅŸ KadÄ±n EÅŸofman TakÄ±m",
-    "category": "EÅŸofman TakÄ±mÄ±",
-    "description": "Åal YakalÄ± Garnili Modal KumaÅŸ KadÄ±n EÅŸofman TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Şal Yakalı Garnili Modal Kumaş Kadın Eşofman Takım",
+    "category": "Eşofman Takımı",
+    "description": "Şal Yakalı Garnili Modal Kumaş Kadın Eşofman Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1e97d7f1-fd9d-4b50-a68f-2fb26871ae77/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/1e97d7f1-fd9d-4b50-a68f-2fb26871ae77/image_1080.webp",
@@ -2789,7 +2789,7 @@ export const MOCK_PRODUCTS = [
     "variants": [
       {
         "id": "d570d8cb-4277-4669-bf49-8578c7ddec55",
-        "label": "sarÄ± / m",
+        "label": "sarı / m",
         "stock": 10,
         "priceCents": 119900
       },
@@ -2819,7 +2819,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "2ad40649-f450-4aee-a230-477965f1167e",
-        "label": "sarÄ± / s",
+        "label": "sarı / s",
         "stock": 10,
         "priceCents": 119900
       },
@@ -2867,7 +2867,7 @@ export const MOCK_PRODUCTS = [
       },
       {
         "id": "b2b0fa8b-725c-497e-84c2-5ea8ad361cff",
-        "label": "sarÄ± / l",
+        "label": "sarı / l",
         "stock": 10,
         "priceCents": 119900
       },
@@ -2890,9 +2890,9 @@ export const MOCK_PRODUCTS = [
     "id": "56ba6773-c419-40fb-bc15-349b9e21abb2",
     "sourceId": "56ba6773-c419-40fb-bc15-349b9e21abb2",
     "slug": "sal-yakali-garnili-modal-kumas-kadin-esofman-takim-1",
-    "name": "Åal YakalÄ± Garnili Modal KumaÅŸ KadÄ±n EÅŸofman TakÄ±m",
-    "category": "Alt - Ãœst TakÄ±m",
-    "description": "Åal YakalÄ± Garnili Modal KumaÅŸ KadÄ±n EÅŸofman TakÄ±m Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "name": "Şal Yakalı Garnili Modal Kumaş Kadın Eşofman Takım",
+    "category": "Alt - Üst Takım",
+    "description": "Şal Yakalı Garnili Modal Kumaş Kadın Eşofman Takım · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/2c323af0-1be4-41ac-9dfe-375602f9888a/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/2c323af0-1be4-41ac-9dfe-375602f9888a/image_1080.webp",
@@ -2950,9 +2950,9 @@ export const MOCK_PRODUCTS = [
     "id": "456cdee3-b0b8-4238-8c4c-e19a53e9c72c",
     "sourceId": "456cdee3-b0b8-4238-8c4c-e19a53e9c72c",
     "slug": "degaje-yaka-boyun-aksesuarli-dekolteli-elbise",
-    "name": "Degaje Yaka Boyun AksesuarlÄ± Dekolteli Elbise",
+    "name": "Degaje Yaka Boyun Aksesuarlı Dekolteli Elbise",
     "category": "Elbise",
-    "description": "Degaje Yaka Boyun AksesuarlÄ± Dekolteli Elbise Â· Eztila Butik kadÄ±n giyim koleksiyonu.",
+    "description": "Degaje Yaka Boyun Aksesuarlı Dekolteli Elbise · Eztila Butik kadın giyim koleksiyonu.",
     "imageUrl": "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/a5b25467-20b3-4f1a-9048-55655b345784/image_1080.webp",
     "gallery": [
       "https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/a5b25467-20b3-4f1a-9048-55655b345784/image_1080.webp",
@@ -3030,4 +3030,7 @@ export const MOCK_PRODUCTS = [
   }
 ];
 
-export const STORE_CONFIG = { freeShippingThresholdCents: 150000, shippingFeeCents: 7900, };
+export const STORE_CONFIG = {
+  freeShippingThresholdCents: 150000,
+  shippingFeeCents: 7900,
+};
