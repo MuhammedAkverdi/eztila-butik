@@ -7,6 +7,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
 const TrackingPage = lazy(() => import('./pages/TrackingPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/hesabim" element={<AccountPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/urun/:slug" element={<ProductDetail />} />
+        <Route path="/sepetim" element={<CartPage />} />
         <Route path="/odeme" element={<CheckoutPage />} />
         <Route path="/siparis-takip" element={<TrackingPage />} />
         <Route path="/kvkk-aydinlatma" element={<LegalPage />} />

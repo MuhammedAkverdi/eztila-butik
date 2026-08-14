@@ -60,7 +60,6 @@ export default function Storefront() {
   const [sort, setSort] = useState('featured');
   const [cart, setCart] = useState([]);
   const [cartReady, setCartReady] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [notice, setNotice] = useState('');
@@ -105,7 +104,7 @@ export default function Storefront() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('openCart') === 'true') {
-      setCartOpen(true);
+      window.location.assign('/sepetim');
     }
 
     return () => cancelAnimationFrame(raf);
@@ -194,7 +193,7 @@ export default function Storefront() {
       if (idx >= 0) return prev.map((item, i) => i === idx ? { ...item, quantity: Math.min(10, item.quantity + 1) } : item);
       return [...prev, { productId: product.id, quantity: 1, variantLabel }];
     });
-    setCartOpen(true);
+    window.location.assign('/sepetim');
   }
 
   function updateQty(productId, variantLabel, qty) {
@@ -234,11 +233,11 @@ export default function Storefront() {
             <span className="account-link-icon" aria-hidden="true"><UserIcon /></span>
             <span className="account-link-text">{account ? 'Hesabım' : 'Giriş / Üye ol'}</span>
           </a>
-          <button className="cart-button" onClick={() => setCartOpen(true)} aria-label={`Sepetim, ${cartCount} ürün`}>
+          <a className="cart-button" href="/sepetim" aria-label={`Sepetim, ${cartCount} ürün`}>
             <span className="cart-btn-icon"><BagIcon /></span>
             <span className="cart-btn-label">Sepet</span>
             <b>{cartCount}</b>
-          </button>
+          </a>
         </div>
       </header>
 
@@ -392,113 +391,6 @@ export default function Storefront() {
           <span>© 2026 Eztila Butik · <a href="/admin">Yönetim</a></span>
         </div>
       </footer>
-
-      {/* CART DRAWER */}
-      {cartOpen && (
-        <div className="overlay" onMouseDown={() => setCartOpen(false)}>
-          <aside className="cart-drawer" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="drawer-head">
-              <div>
-                <small>EZTİLA</small>
-                <h2>Sepetim ({cartCount})</h2>
-              </div>
-              <button type="button" onClick={() => setCartOpen(false)}>×</button>
-            </div>
-            <div className="cart-lines">
-              {cartItems.length ? cartItems.map((item) => (
-                <article key={`${item.productId}-${item.variantLabel}`}>
-                  <img src={item.product.imageUrl || LOGO} alt="" />
-                  <div>
-                    <h3>{item.product.name}</h3>
-                    <span>{item.variantLabel}</span>
-                    <strong>{fmt.format((item.product.variants.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents) / 100)}</strong>
-                    <div className="qty">
-                      <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity - 1)}>−</button>
-                      <b>{item.quantity}</b>
-                      <button onClick={() => updateQty(item.productId, item.variantLabel, item.quantity + 1)}>+</button>
-                    </div>
-                  </div>
-                </article>
-              )) : (
-                <div className="cart-empty">
-                  <span>♡</span>
-                  <h3>Sepetin henüz boş.</h3>
-                  <button onClick={() => setCartOpen(false)}>Alışverişe dön</button>
-                </div>
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="cart-summary">
-                {/* PROMO COUPON SECTION */}
-                <div className="cart-coupon-wrap">
-                  {appliedCoupon && currentCouponResult?.valid ? (
-                    <div className="cart-coupon-applied">
-                      <div className="coupon-badge-text">
-                        <small>UYGULANAN KUPON</small>
-                        <strong>🏷️ {appliedCoupon.code}</strong>
-                        <span>{appliedCoupon.description}</span>
-                      </div>
-                      <button type="button" onClick={handleRemoveCoupon} className="coupon-remove-btn" title="Kuponu Kaldır">
-                        Kaldır ×
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleApplyCoupon} className="cart-coupon-form">
-                      <input
-                        value={couponInput}
-                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        placeholder="İNDİRİM KODU (örn: EZTILA10)"
-                      />
-                      <button type="submit">Uygula</button>
-                    </form>
-                  )}
-
-                  {couponFeedback && (
-                    <div className={`coupon-feedback-msg ${couponFeedback.type}`}>
-                      {couponFeedback.text}
-                    </div>
-                  )}
-
-                  {!appliedCoupon && (
-                    <div className="coupon-available-hint">
-                      <span>Kullanılabilir kodlar: <b>EZTILA10</b> (%10), <b>HOSGELDIN</b> (100 TL) · <i>(Siparişte 1 kupon geçerlidir)</i></span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="cart-calc-rows">
-                  <div>
-                    <span>Ara toplam</span>
-                    <strong>{fmt.format(rawSubtotalCents / 100)}</strong>
-                  </div>
-
-                  {discountCents > 0 && (
-                    <div className="discount-row">
-                      <span>Kupon İndirimi ({appliedCoupon.code})</span>
-                      <strong>−{fmt.format(discountCents / 100)}</strong>
-                    </div>
-                  )}
-
-                  <div>
-                    <span>Kargo</span>
-                    <strong>{shippingFee === 0 ? 'Ücretsiz' : fmt.format(shippingFee / 100)}</strong>
-                  </div>
-
-                  <div className="cart-grand-total">
-                    <span>Toplam</span>
-                    <strong>{fmt.format(finalTotalCents / 100)}</strong>
-                  </div>
-                </div>
-
-                <button className="button button-primary" style={{ marginTop: '1.5rem' }} onClick={() => window.location.assign('/odeme')}>
-                  Güvenli ödemeye geç →
-                </button>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
 
       <a className="floating-whatsapp" href={WA_LINK} target="_blank" rel="noreferrer" aria-label="WhatsApp Destek Hattı">
         <WhatsAppIcon />

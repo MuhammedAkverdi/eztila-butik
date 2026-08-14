@@ -1,29 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { authFetch } from '../lib/auth-fetch';
-import { getSupabaseClient, getAuthConfig } from '../lib/supabase';
 import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
-
-function GoogleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 18 18" width="20" height="20" style={{ flexShrink: 0 }}>
-      <path fill="#EA4335" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844c-.209 1.125-.843 2.078-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.874 2.684-6.615Z" />
-      <path fill="#4285F4" d="M9 18c2.43 0 4.468-.806 5.956-2.18l-2.909-2.258c-.806.54-1.835.858-3.047.858-2.344 0-4.328-1.585-5.037-3.716H.956v2.332A9 9 0 0 0 9 18Z" />
-      <path fill="#FBBC05" d="M3.963 10.704A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.704V4.964H.956A9 9 0 0 0 0 9c0 1.45.347 2.824.956 4.036l3.007-2.332Z" />
-      <path fill="#34A853" d="M9 3.58c1.322 0 2.508.454 3.441 1.346l2.581-2.581C13.464.891 11.426 0 9 0A9 9 0 0 0 .956 4.964l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z" />
-    </svg>
-  );
-}
 
 export default function CheckoutPage() {
   const [account, setAccount] = useState(null);
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  
+  // Steps
+  const [step, setStep] = useState(1); // 1 = Address, 2 = Payment
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -32,6 +21,7 @@ export default function CheckoutPage() {
 
   // Address form
   const [shippingForm, setShippingForm] = useState({
+    invoiceType: 'Bireysel Adres',
     fullName: '',
     phone: '',
     email: '',
@@ -39,17 +29,16 @@ export default function CheckoutPage() {
     district: '',
     neighborhood: '',
     address: '',
-    postalCode: '',
+    differentInvoiceAddress: false
   });
 
-  // Card form (PCI-DSS compliant)
+  // Card form (PCI-DSS compliant UI mockup)
   const [cardForm, setCardForm] = useState({
     cardHolder: '',
     cardNumber: '',
     expireMonth: '12',
     expireYear: '2028',
     cvv: '',
-    saveCard: false,
   });
 
   // Agreements
@@ -60,20 +49,16 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products'),
-      authFetch('/api/account'),
-      getAuthConfig().catch(() => ({ googleEnabled: false })),
-    ]).then(async ([pRes, aRes, authCfg]) => {
-      const pData = await pRes.json().catch(() => ({ products: [] }));
-      const aData = aRes.ok ? await aRes.json().catch(() => null) : null;
+      fetch('/api/products').then(r => r.json()).catch(() => ({ products: [] })),
+      authFetch('/api/account').then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([pData, aData]) => {
       setProducts(pData.products || []);
-      setGoogleEnabled(authCfg.googleEnabled);
       if (aData) {
         setAccount(aData);
         if (aData.addresses?.length > 0) {
           const defaultAddr = aData.addresses.find((a) => a.isDefault) || aData.addresses[0];
-          setSelectedAddressId(defaultAddr.id);
-          setShippingForm({
+          setShippingForm(prev => ({
+            ...prev,
             fullName: defaultAddr.contactName || aData.customer.fullName || '',
             phone: defaultAddr.phone || aData.customer.phone || '',
             email: aData.customer.email || '',
@@ -81,10 +66,9 @@ export default function CheckoutPage() {
             district: defaultAddr.district || '',
             neighborhood: defaultAddr.neighborhood || '',
             address: defaultAddr.address || '',
-            postalCode: defaultAddr.postalCode || '',
-          });
+          }));
         } else {
-          setShippingForm((prev) => ({
+          setShippingForm(prev => ({
             ...prev,
             fullName: aData.customer.fullName || '',
             phone: aData.customer.phone || '',
@@ -105,8 +89,7 @@ export default function CheckoutPage() {
 
   const cartItems = useMemo(() =>
     cart.map((item) => ({ ...item, product: products.find((p) => p.id === item.productId) })).filter((i) => i.product),
-    [cart, products]
-  );
+  [cart, products]);
 
   const subtotalCents = cartItems.reduce((sum, item) => {
     const vPrice = item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents;
@@ -133,28 +116,14 @@ export default function CheckoutPage() {
     }
     setAppliedCoupon(res);
     saveActiveCoupon(res);
-    setCouponFeedback({ type: 'success', text: `"${res.code}" kuponu başarıyla uygulandı.` });
+    setCouponFeedback({ type: 'success', text: `"${res.code}" uygulandı.` });
     setCouponInput('');
   }
 
   function handleRemoveCoupon() {
     setAppliedCoupon(null);
     saveActiveCoupon(null);
-    setCouponFeedback({ type: 'info', text: 'Kupon kaldırıldı.' });
-  }
-
-  async function handleGoogleAuth() {
-    try {
-      const supabase = await getSupabaseClient();
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/odeme')}`,
-        },
-      });
-    } catch {
-      window.location.assign('/giris?next=/odeme');
-    }
+    setCouponFeedback(null);
   }
 
   async function handleCompleteOrder(e) {
@@ -172,7 +141,6 @@ export default function CheckoutPage() {
     setErrorMsg('');
 
     try {
-      // Create Order payload
       const orderNumber = `EZT-${Date.now().toString().slice(-6)}`;
       const payload = {
         orderNumber,
@@ -195,7 +163,6 @@ export default function CheckoutPage() {
         createdAt: new Date().toISOString(),
       };
 
-      // Best effort send to account if logged in
       try {
         await authFetch('/api/account/orders', {
           method: 'POST',
@@ -203,10 +170,9 @@ export default function CheckoutPage() {
           body: JSON.stringify(payload),
         });
       } catch {
-        // Fallback
+        // Fallback for guest checkout
       }
 
-      // Clear Cart & Coupon
       localStorage.removeItem('eztila-cart');
       saveActiveCoupon(null);
       setCart([]);
@@ -219,554 +185,268 @@ export default function CheckoutPage() {
   }
 
   if (loading) {
-    return (
-      <main className="checkout-loading">
-        <img src={LOGO} alt="Eztila Butik" />
-        <span>Ödeme ortamı hazırlanıyor…</span>
-      </main>
-    );
+    return <main className="checkout-loading"><span>Yükleniyor...</span></main>;
   }
 
   if (orderComplete) {
     return (
-      <main className="payment-result">
-        <section>
-          <span className="result-icon success">✓</span>
-          <p className="eyebrow">EZTİLA BUTİK · SİPARİŞ ALINDI</p>
-          <h1>Siparişiniz İçin Teşekkürler!</h1>
-          <p>
-            <strong>{orderComplete.orderNumber}</strong> numaralı siparişiniz başarıyla alındı ve hazırlık sırasına alındı.
-            Sipariş detayları <b>{orderComplete.email}</b> adresinize iletilmiştir.
-          </p>
-          {orderComplete.discountCents > 0 && (
-            <p style={{ color: '#277541', fontSize: '0.85rem', fontWeight: 'bold' }}>
-              ✓ "{orderComplete.appliedCoupon}" kuponuyla {fmt.format(orderComplete.discountCents / 100)} indirim uygulandı.
-            </p>
-          )}
-          <strong>Toplam Tutar: {fmt.format(orderComplete.totalCents / 100)}</strong>
-          <div>
-            <a className="button button-primary" href="/hesabim">Siparişimi Takip Et</a>
-            <a href="/#koleksiyon">Alışverişe Devam Et →</a>
-          </div>
-        </section>
+      <main className="payment-result" style={{textAlign: 'center', padding: '5rem 1rem'}}>
+        <h1 style={{fontSize: '2rem', marginBottom: '1rem'}}>Siparişiniz İçin Teşekkürler!</h1>
+        <p><strong>{orderComplete.orderNumber}</strong> numaralı siparişiniz başarıyla alındı.</p>
+        <p style={{margin: '2rem 0'}}><a href="/" className="button">Alışverişe Devam Et</a></p>
       </main>
     );
   }
 
   if (cartItems.length === 0) {
     return (
-      <main className="checkout-empty">
-        <header className="checkout-header">
-          <a href="/"><img src={LOGO} alt="Eztila Butik" /></a>
-          <span></span>
-        </header>
-        <span>♡</span>
+      <main className="checkout-empty" style={{textAlign: 'center', padding: '5rem 1rem'}}>
         <h1>Sepetiniz Henüz Boş</h1>
-        <p>Ödeme yapabilmek için sepetinize en az bir ürün eklemelisiniz.</p>
-        <a className="button button-primary" href="/#koleksiyon">Koleksiyonu Keşfet →</a>
+        <a className="button" href="/#koleksiyon" style={{marginTop: '2rem', display: 'inline-block'}}>Koleksiyonu Keşfet →</a>
       </main>
     );
   }
 
-  // =========================================================================
-  // AUTH REQUIREMENT GATE (Giriş / Üyelik Şartı)
-  // =========================================================================
-  if (!account) {
-    return (
-      <main className="checkout-page">
-        <header className="checkout-header">
-          <a href="/"><img src={LOGO} alt="Eztila Butik" /></a>
-          <div className="checkout-steps">
-            <span className="active"><b>1</b> Üyelik &amp; Giriş</span>
-            <i></i>
-            <span><b>2</b> Adres</span>
-            <i></i>
-            <span><b>3</b> Ödeme</span>
-          </div>
-          <span></span>
-        </header>
-
-        <div className="checkout-layout">
-          <section className="checkout-main">
-            <a className="checkout-back" href="/?openCart=true">← Sepetime dön</a>
-
-            <div className="checkout-title" style={{ margin: '2rem 0 2.5rem' }}>
-              <p>EZTİLA BUTİK · GÜVENLİ ALIŞVERİŞ</p>
-              <h1>Giriş Yapın veya Üye Olun</h1>
-              <span>
-                Siparişinizi tamamlamak, kargonuzu anlık takip edebilmek ve faturalarınıza dilediğiniz an erişebilmek için üyelik gerekmektedir.
-              </span>
-            </div>
-
-            <div className="checkout-auth-card">
-              {googleEnabled && (
-                <>
-                  <button
-                    type="button"
-                    className="google-auth-btn"
-                    onClick={handleGoogleAuth}
-                    style={{ width: '100%', minHeight: '52px', justifyContent: 'center' }}
-                  >
-                    <GoogleIcon />
-                    <span>Google ile Tek Tıkla Devam Et</span>
-                  </button>
-                  <div className="auth-divider" style={{ margin: '1.5rem 0' }}>
-                    <span>veya e-posta ile</span>
-                  </div>
-                </>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <a
-                  className="button button-primary"
-                  href="/giris?next=/odeme"
-                  style={{ width: '100%', minHeight: '50px', textAlign: 'center' }}
-                >
-                  Giriş Yap →
-                </a>
-                <a
-                  className="button"
-                  href="/uye-ol?next=/odeme"
-                  style={{
-                    width: '100%',
-                    minHeight: '50px',
-                    textAlign: 'center',
-                    border: '1.5px solid var(--navy)',
-                    color: 'var(--navy)',
-                    background: '#ffffff',
-                  }}
-                >
-                  Yeni Hesap Oluştur →
-                </a>
-              </div>
-
-              <div className="checkout-assurances" style={{ marginTop: '2rem', borderTop: '1px solid #ece7e0', paddingTop: '1.25rem' }}>
-                <span>✦ 10 saniyede hızlı ve güvenli üyelik</span>
-                <span>✦ Kayıtlı adresleriniz ile tek tıkla hızlı sipariş</span>
-                <span>✦ Hesabım panelinden kargo hareketlerini anlık sorgulama</span>
-              </div>
-            </div>
-          </section>
-
-          {/* SIDEBAR ORDER SUMMARY */}
-          <aside className="checkout-summary">
-            <header>
-              <span>SİPARİŞ ÖZETİ ({cartItems.length} ÜRÜN)</span>
-              <a href="/?openCart=true">Düzenle</a>
-            </header>
-
-            <div className="checkout-summary-lines">
-              {cartItems.map((item) => (
-                <article key={`${item.productId}-${item.variantLabel}`}>
-                  <div>
-                    <img src={item.product.imageUrl || LOGO} alt="" />
-                    <b>{item.quantity}</b>
-                  </div>
-                  <section>
-                    <h3>{item.product.name}</h3>
-                    <span>Beden: {item.variantLabel}</span>
-                    <strong>{fmt.format((item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents) * item.quantity / 100)}</strong>
-                  </section>
-                </article>
-              ))}
-            </div>
-
-            <div className="checkout-summary-totals">
-              <div>
-                <span>Ara Toplam</span>
-                <strong>{fmt.format(subtotalCents / 100)}</strong>
-              </div>
-              {discountCents > 0 && (
-                <div style={{ color: '#277541', fontWeight: 600 }}>
-                  <span>Kupon İndirimi ({appliedCoupon.code})</span>
-                  <strong>−{fmt.format(discountCents / 100)}</strong>
-                </div>
-              )}
-              <div>
-                <span>Kargo</span>
-                <strong>{shippingCents === 0 ? 'Ücretsiz' : fmt.format(shippingCents / 100)}</strong>
-              </div>
-              <div className="grand-total">
-                <span>Toplam Ödenecek</span>
-                <strong>{fmt.format(totalCents / 100)}</strong>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </main>
-    );
-  }
-
-  // =========================================================================
-  // LOGGED IN CHECKOUT FLOW (Adres & Ödeme)
-  // =========================================================================
   return (
-    <main className="checkout-page">
-      <header className="checkout-header">
-        <a href="/"><img src={LOGO} alt="Eztila Butik" /></a>
-        <div className="checkout-steps">
-          <span className="done"><b>✓</b> Giriş Yapıldı</span>
-          <i></i>
-          <span className="active"><b>1</b> Adres &amp; Kargo</span>
-          <i></i>
-          <span className="active"><b>2</b> Ödeme</span>
+    <div className="co-shell">
+      <header className="co-header">
+        <a href="/" className="co-logo"><img src={LOGO} alt="Eztila Butik" /></a>
+        <div className="co-stepper-top">
+          <div className={`co-step ${step >= 1 ? 'active' : ''}`} onClick={() => setStep(1)}>
+            <div className="co-step-num">1</div>
+            <span>Adres & Kargo</span>
+          </div>
+          <div className="co-step-divider"></div>
+          <div className={`co-step ${step >= 2 ? 'active' : ''}`} onClick={() => {
+            if(shippingForm.fullName && shippingForm.address) setStep(2);
+          }}>
+            <div className="co-step-num">2</div>
+            <span>Ödeme</span>
+          </div>
         </div>
-        <span></span>
       </header>
 
-      <div className="checkout-layout">
-        <section className="checkout-main">
-          <a className="checkout-back" href="/?openCart=true">← Sepetime dön</a>
+      <div className="co-container">
+        
+        {/* LEFT COLUMN: Checkout Form */}
+        <div className="co-left">
+          
+          {step === 1 && (
+            <div className="co-step-box">
+              {!account && (
+                <div className="co-login-prompt">
+                  Zaten hesabınız var mı? <a href="/giris?next=/odeme">Giriş Yap</a>
+                </div>
+              )}
+              
+              <div className="co-tabs">
+                <div className="co-tab active">
+                  <span className="co-tab-num">1</span> Adres Bilgileri
+                </div>
+                <div className="co-tab inactive">
+                  <span className="co-tab-num">2</span> Ödeme Bilgileri
+                </div>
+              </div>
 
-          <div className="checkout-title">
-            <p>EZTİLA BUTİK</p>
-            <h1>Güvenli Ödeme</h1>
-            <span>Hoş geldiniz, <b>{account.customer?.fullName || account.customer?.email}</b>. Teslimat bilgilerinizi kontrol edip siparişinizi tamamlayın.</span>
-          </div>
-
-          {errorMsg && (
-            <div className="checkout-page-error" role="alert">
-              <span>{errorMsg}</span>
-              <button type="button" onClick={() => setErrorMsg('')}>×</button>
+              <div className="co-address-wrapper">
+                <div className="co-address-head">
+                  <span>📍 Yeni Adres Ekle</span>
+                </div>
+                
+                <form className="co-address-form" onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
+                  <div className="co-form-grid">
+                    <label>
+                      <span className="co-label">Fatura Türü</span>
+                      <select value={shippingForm.invoiceType} onChange={e => setShippingForm({...shippingForm, invoiceType: e.target.value})}>
+                        <option>Bireysel Adres</option>
+                        <option>Kurumsal Adres</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="co-label">E-Mail Adresiniz *</span>
+                      <input type="email" required value={shippingForm.email} onChange={e => setShippingForm({...shippingForm, email: e.target.value})} />
+                    </label>
+                    <label>
+                      <span className="co-label">Ad Soyad *</span>
+                      <input type="text" required value={shippingForm.fullName} onChange={e => setShippingForm({...shippingForm, fullName: e.target.value})} />
+                    </label>
+                    <label>
+                      <span className="co-label">İl Seçiniz *</span>
+                      <select required value={shippingForm.city} onChange={e => setShippingForm({...shippingForm, city: e.target.value})}>
+                        <option value="">İl Seçiniz</option>
+                        <option value="İstanbul">İstanbul</option>
+                        <option value="Ankara">Ankara</option>
+                        <option value="İzmir">İzmir</option>
+                        <option value="Diğer">Diğer</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="co-label">İlçe</span>
+                      <input type="text" value={shippingForm.district} onChange={e => setShippingForm({...shippingForm, district: e.target.value})} />
+                    </label>
+                    <label>
+                      <span className="co-label">Semt</span>
+                      <input type="text" value={shippingForm.neighborhood} onChange={e => setShippingForm({...shippingForm, neighborhood: e.target.value})} />
+                    </label>
+                    <label className="co-full-width">
+                      <span className="co-label">Adres *</span>
+                      <textarea required rows="3" value={shippingForm.address} onChange={e => setShippingForm({...shippingForm, address: e.target.value})}></textarea>
+                    </label>
+                    <label>
+                      <span className="co-label">Cep Telefonu *</span>
+                      <input type="tel" required value={shippingForm.phone} onChange={e => setShippingForm({...shippingForm, phone: e.target.value})} />
+                    </label>
+                  </div>
+                  
+                  <label className="co-checkbox-row">
+                    <input type="checkbox" checked={shippingForm.differentInvoiceAddress} onChange={e => setShippingForm({...shippingForm, differentInvoiceAddress: e.target.checked})} />
+                    <span>Faturamın farklı bir adrese düzenlenmesini istiyorum</span>
+                  </label>
+                  
+                  <button type="submit" className="co-submit-btn">ADRESİ KAYDET</button>
+                </form>
+              </div>
             </div>
           )}
 
-          {/* STEP 1: ADDRESS */}
-          <div className="checkout-section">
-            <header>
-              <span>01</span>
-              <div>
-                <h2>Teslimat ve İletişim Bilgileri</h2>
-                <p>Siparişinizin ulaştırılacağı adres ve bilgilendirme detayları.</p>
-              </div>
-            </header>
-
-            {account?.addresses?.length > 0 && (
-              <div className="checkout-addresses">
-                {account.addresses.map((addr) => (
-                  <button
-                    key={addr.id}
-                    type="button"
-                    className={selectedAddressId === addr.id ? 'active' : ''}
-                    onClick={() => {
-                      setSelectedAddressId(addr.id);
-                      setShippingForm({
-                        fullName: addr.contactName,
-                        phone: addr.phone,
-                        email: account.customer.email,
-                        city: addr.city,
-                        district: addr.district,
-                        neighborhood: addr.neighborhood || '',
-                        address: addr.address,
-                        postalCode: addr.postalCode || '',
-                      });
-                    }}
-                  >
-                    <span className="address-radio"></span>
-                    <b>{addr.label} {addr.isDefault && <small>Varsayılan</small>}</b>
-                    <strong>{addr.contactName}</strong>
-                    <p>{addr.address}<br />{addr.district} / {addr.city}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="checkout-form-grid" style={{ marginTop: '1.25rem' }}>
-              <label>
-                Ad Soyad
-                <input
-                  required
-                  autoComplete="off"
-                  value={shippingForm.fullName}
-                  onChange={(e) => setShippingForm({ ...shippingForm, fullName: e.target.value })}
-                  placeholder="Adınız ve Soyadınız"
-                />
-              </label>
-              <label>
-                Telefon Numarası
-                <input
-                  required
-                  type="tel"
-                  autoComplete="off"
-                  value={shippingForm.phone}
-                  onChange={(e) => setShippingForm({ ...shippingForm, phone: e.target.value })}
-                  placeholder="05xx xxx xx xx"
-                />
-              </label>
-              <label className="wide">
-                E-posta Adresi (Sipariş Takibi İçin)
-                <input
-                  required
-                  type="email"
-                  autoComplete="off"
-                  value={shippingForm.email}
-                  onChange={(e) => setShippingForm({ ...shippingForm, email: e.target.value })}
-                  placeholder="ornek@email.com"
-                />
-              </label>
-              <label>
-                İl
-                <input
-                  required
-                  autoComplete="off"
-                  value={shippingForm.city}
-                  onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
-                  placeholder="İstanbul"
-                />
-              </label>
-              <label>
-                İlçe
-                <input
-                  required
-                  autoComplete="off"
-                  value={shippingForm.district}
-                  onChange={(e) => setShippingForm({ ...shippingForm, district: e.target.value })}
-                  placeholder="Kadıköy"
-                />
-              </label>
-              <label>
-                Mahalle
-                <input
-                  autoComplete="off"
-                  value={shippingForm.neighborhood}
-                  onChange={(e) => setShippingForm({ ...shippingForm, neighborhood: e.target.value })}
-                  placeholder="Caddebostan Mah."
-                />
-              </label>
-              <label>
-                Posta Kodu
-                <input
-                  autoComplete="off"
-                  value={shippingForm.postalCode}
-                  onChange={(e) => setShippingForm({ ...shippingForm, postalCode: e.target.value })}
-                  placeholder="34728"
-                />
-              </label>
-              <label className="wide">
-                Açık Adres (Cadde, Sokak, Bina &amp; Daire No)
-                <textarea
-                  required
-                  value={shippingForm.address}
-                  onChange={(e) => setShippingForm({ ...shippingForm, address: e.target.value })}
-                  placeholder="Bağdat Cad. No: 10 Daire: 4"
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* STEP 2: SHIPPING */}
-          <div className="checkout-section">
-            <header>
-              <span>02</span>
-              <div>
-                <h2>Kargo Seçeneği</h2>
-                <p>Türkiye geneli anlaşmalı hızlı ve sigortalı kargo gönderimi.</p>
-              </div>
-            </header>
-            <div className="payment-ready">
-              <span>✓</span>
-              <div>
-                <strong>Eztila Express &amp; Güvenli Butik Gönderimi</strong>
-                <p>
-                  {shippingCents === 0 ? 'Tebrikler! Ücretsiz kargo avantajı uygulandı.' : 'Kargo ücreti: 79,00 TL'} (1-2 iş günü içinde teslimat)
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 3: PAYMENT */}
-          <div className="checkout-section">
-            <header>
-              <span>03</span>
-              <div>
+          {step === 2 && (
+            <div className="co-step-box">
+              
+              <div className="co-payment-head">
                 <h2>Kartla Güvenli Ödeme</h2>
                 <p>Ödeme bilgileriniz güvenli şifreleme altyapısıyla korunur.</p>
               </div>
-            </header>
 
-            <form onSubmit={handleCompleteOrder} className="checkout-form-grid" autoComplete="off">
-              <label className="wide">
-                Kart Üzerindeki İsim
-                <input
-                  required
-                  autoComplete="off"
-                  spellCheck="false"
-                  data-form-type="other"
-                  value={cardForm.cardHolder}
-                  onChange={(e) => setCardForm({ ...cardForm, cardHolder: e.target.value })}
-                  placeholder="KART SAHİBİNİN ADI"
-                />
-              </label>
-              <label className="wide">
-                Kart Numarası
-                <input
-                  required
-                  autoComplete="off"
-                  spellCheck="false"
-                  data-form-type="other"
-                  maxLength={19}
-                  value={cardForm.cardNumber}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                    setCardForm({ ...cardForm, cardNumber: v });
-                  }}
-                  placeholder="0000 0000 0000 0000"
-                />
-              </label>
-              <label>
-                Son Kullanma Ayı
-                <select
-                  value={cardForm.expireMonth}
-                  onChange={(e) => setCardForm({ ...cardForm, expireMonth: e.target.value })}
-                  style={{ border: '1px solid #d9d2c8', minHeight: '49px', padding: '0.85rem' }}
-                >
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const m = String(i + 1).padStart(2, '0');
-                    return <option key={m} value={m}>{m}</option>;
-                  })}
-                </select>
-              </label>
-              <label>
-                Son Kullanma Yılı
-                <select
-                  value={cardForm.expireYear}
-                  onChange={(e) => setCardForm({ ...cardForm, expireYear: e.target.value })}
-                  style={{ border: '1px solid #d9d2c8', minHeight: '49px', padding: '0.85rem' }}
-                >
-                  {Array.from({ length: 10 }).map((_, i) => {
-                    const y = String(2026 + i);
-                    return <option key={y} value={y}>{y}</option>;
-                  })}
-                </select>
-              </label>
-              <label>
-                Güvenlik Kodu (CVV)
-                <input
-                  required
-                  type="password"
-                  maxLength={4}
-                  autoComplete="off"
-                  spellCheck="false"
-                  data-form-type="other"
-                  value={cardForm.cvv}
-                  onChange={(e) => setCardForm({ ...cardForm, cvv: e.target.value.replace(/\D/g, '') })}
-                  placeholder="123"
-                />
-              </label>
-
-              <div className="checkout-agreement wide">
-                <input
-                  type="checkbox"
-                  id="terms-check"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                />
-                <label htmlFor="terms-check" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
-                  <a href="/on-bilgilendirme" target="_blank" rel="noreferrer">Ön Bilgilendirme Formu</a> ve{' '}
-                  <a href="/mesafeli-satis" target="_blank" rel="noreferrer">Mesafeli Satış Sözleşmesi</a>'ni okudum, kabul ediyorum.
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                className="button button-primary wide"
-                disabled={submitting}
-                style={{ marginTop: '1rem', minHeight: '56px', fontSize: '0.88rem' }}
-              >
-                {submitting ? 'Ödeme Güvenle İşleniyor…' : `${fmt.format(totalCents / 100)} ile Siparişi Tamamla →`}
-              </button>
-            </form>
-          </div>
-        </section>
-
-        {/* SIDEBAR ORDER SUMMARY */}
-        <aside className="checkout-summary">
-          <header>
-            <span>SİPARİŞ ÖZETİ ({cartItems.length} ÜRÜN)</span>
-            <a href="/?openCart=true">Düzenle</a>
-          </header>
-
-          <div className="checkout-summary-lines">
-            {cartItems.map((item) => (
-              <article key={`${item.productId}-${item.variantLabel}`}>
-                <div>
-                  <img src={item.product.imageUrl || LOGO} alt="" />
-                  <b>{item.quantity}</b>
+              <form className="co-payment-form" onSubmit={handleCompleteOrder}>
+                {errorMsg && <div className="co-error">{errorMsg}</div>}
+                
+                <div className="co-form-grid">
+                  <label className="co-full-width">
+                    <span className="co-label-dark">KART ÜZERİNDEKİ İSİM</span>
+                    <input required type="text" placeholder="KART SAHİBİNİN ADI" value={cardForm.cardHolder} onChange={e => setCardForm({...cardForm, cardHolder: e.target.value})} />
+                  </label>
+                  <label className="co-full-width">
+                    <span className="co-label-dark">KART NUMARASI</span>
+                    <input required type="text" placeholder="0000 0000 0000 0000" maxLength="19" value={cardForm.cardNumber} onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                      setCardForm({...cardForm, cardNumber: v});
+                    }} />
+                  </label>
+                  <label>
+                    <span className="co-label-dark">SON KULLANMA AYI</span>
+                    <select value={cardForm.expireMonth} onChange={e => setCardForm({...cardForm, expireMonth: e.target.value})}>
+                      {Array.from({length: 12}).map((_,i) => {
+                        const m = String(i+1).padStart(2,'0');
+                        return <option key={m} value={m}>{m}</option>;
+                      })}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="co-label-dark">SON KULLANMA YILI</span>
+                    <select value={cardForm.expireYear} onChange={e => setCardForm({...cardForm, expireYear: e.target.value})}>
+                      {Array.from({length: 10}).map((_,i) => <option key={i} value={2026+i}>{2026+i}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="co-label-dark">GÜVENLİK KODU (CVV)</span>
+                    <input required type="password" placeholder="123" maxLength="4" value={cardForm.cvv} onChange={e => setCardForm({...cardForm, cvv: e.target.value.replace(/\D/g,'')})} />
+                  </label>
                 </div>
-                <section>
-                  <h3>{item.product.name}</h3>
-                  <span>Beden: {item.variantLabel}</span>
-                  <strong>{fmt.format((item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents) * item.quantity / 100)}</strong>
-                </section>
-              </article>
-            ))}
-          </div>
 
-          {/* COUPON SECTION IN CHECKOUT */}
-          <div className="cart-coupon-wrap" style={{ margin: '1rem 0', padding: '0.85rem', background: '#ffffff', border: '1px solid #ded8cf', borderRadius: '4px' }}>
-            {appliedCoupon && currentCouponResult?.valid ? (
-              <div className="cart-coupon-applied">
-                <div className="coupon-badge-text">
-                  <small>UYGULANAN KUPON</small>
-                  <strong>🏷️ {appliedCoupon.code}</strong>
-                  <span>{appliedCoupon.description}</span>
+                <div className="co-agreements-box">
+                  <label className="co-checkbox-row align-start">
+                    <input type="checkbox" required checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} />
+                    <span>
+                      <a href="/on-bilgilendirme" target="_blank" rel="noreferrer">Ön Bilgilendirme Formu</a><br/>
+                      ve<br/>
+                      <a href="/mesafeli-satis" target="_blank" rel="noreferrer">Mesafeli Satış Sözleşmesi</a><br/>
+                      'ni okudum, kabul ediyorum.
+                    </span>
+                  </label>
                 </div>
-                <button type="button" onClick={handleRemoveCoupon} className="coupon-remove-btn">
-                  Kaldır ×
+
+                <button type="submit" disabled={submitting} className="co-submit-btn">
+                  {submitting ? 'İŞLENİYOR...' : `${fmt.format(totalCents / 100)} İLE SİPARİŞİ TAMAMLA`}
                 </button>
-              </div>
-            ) : (
-              <form onSubmit={handleApplyCoupon} className="cart-coupon-form">
-                <input
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                  placeholder="İNDİRİM KODU (örn: EZTILA10)"
-                />
-                <button type="submit">Uygula</button>
               </form>
-            )}
-            {couponFeedback && (
-              <div className={`coupon-feedback-msg ${couponFeedback.type}`} style={{ marginTop: '0.4rem' }}>
-                {couponFeedback.text}
-              </div>
-            )}
-            {!appliedCoupon && (
-              <div className="coupon-available-hint" style={{ marginTop: '0.4rem', fontSize: '0.62rem' }}>
-                <span>Siparişte yalnızca 1 indirim kuponu geçerlidir.</span>
-              </div>
-            )}
-          </div>
 
-          <div className="checkout-summary-totals">
-            <div>
-              <span>Ara Toplam</span>
-              <strong>{fmt.format(subtotalCents / 100)}</strong>
+            </div>
+          )}
+
+        </div>
+
+        {/* RIGHT COLUMN: Order Summary */}
+        <div className="co-right">
+          <div className="co-summary-box">
+            <header className="co-summary-head">
+              <h3>Sipariş Özet ({cartItems.length} ürün)</h3>
+              <a href="/sepetim">Düzenle</a>
+            </header>
+            
+            <div className="co-summary-items">
+              {cartItems.map((item, idx) => (
+                <div className="co-summary-item" key={idx}>
+                  <div className="co-summary-img-wrap">
+                    <img src={item.product.imageUrl} alt={item.product.name} />
+                    <span className="co-summary-qty-badge">{item.quantity}</span>
+                  </div>
+                  <div className="co-summary-item-info">
+                    <h4>{item.product.name}</h4>
+                    <small>Beden: {item.variantLabel.toUpperCase()}</small>
+                    <strong>{fmt.format(((item.product.variants?.find((v) => v.label === item.variantLabel)?.priceCents || item.product.priceCents) * item.quantity) / 100)}</strong>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {discountCents > 0 && (
-              <div style={{ color: '#277541', fontWeight: 600 }}>
-                <span>Kupon İndirimi ({appliedCoupon?.code})</span>
-                <strong>−{fmt.format(discountCents / 100)}</strong>
+            <div className="co-summary-coupon">
+              {appliedCoupon && currentCouponResult?.valid ? (
+                <div className="co-coupon-applied">
+                  <div>
+                    <small>UYGULANAN KUPON</small>
+                    <strong>{appliedCoupon.code}</strong>
+                  </div>
+                  <button onClick={handleRemoveCoupon}>Kaldır</button>
+                </div>
+              ) : (
+                <form onSubmit={handleApplyCoupon}>
+                  <input type="text" placeholder="İNDİRİM KODU (örn: EZTILA10)" value={couponInput} onChange={e => setCouponInput(e.target.value)} />
+                  <button type="submit">Uygula</button>
+                </form>
+              )}
+              {couponFeedback && <p className="co-coupon-msg" style={{color: couponFeedback.type === 'error' ? 'red' : 'green'}}>{couponFeedback.text}</p>}
+            </div>
+
+            <div className="co-summary-totals">
+              <div className="co-totals-row">
+                <span>Ara Toplam</span>
+                <span>{fmt.format(subtotalCents / 100)}</span>
               </div>
-            )}
-
-            <div>
-              <span>Kargo</span>
-              <strong>{shippingCents === 0 ? 'Ücretsiz' : fmt.format(shippingCents / 100)}</strong>
+              {discountCents > 0 && (
+                <div className="co-totals-row discount">
+                  <span>İndirim</span>
+                  <span>-{fmt.format(discountCents / 100)}</span>
+                </div>
+              )}
+              <div className="co-totals-row">
+                <span>Kargo</span>
+                <span>{shippingCents === 0 ? 'Ücretsiz' : fmt.format(shippingCents / 100)}</span>
+              </div>
+              <div className="co-totals-row grand">
+                <span>TOPLAM ÖDENECEK</span>
+                <span>{fmt.format(totalCents / 100)}</span>
+              </div>
             </div>
-            <div className="grand-total">
-              <span>Toplam Ödenecek</span>
-              <strong>{fmt.format(totalCents / 100)}</strong>
-            </div>
-          </div>
 
-          <div className="checkout-assurances">
-            <span>✦ 14 gün ücretsiz kolay iade</span>
-            <span>✦ Güvenli 3D Secure kart koruması</span>
-            <span>✦ Şeffaf faturalı ve orijinal ürün garantisi</span>
+            <div className="co-summary-perks">
+              <p>+ 14 gün ücretsiz kolay iade</p>
+              <p>+ Güvenli 3D Secure kart koruması</p>
+              <p>+ Şeffaf faturalı ve orijinal ürün garantisi</p>
+            </div>
+
           </div>
-        </aside>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
