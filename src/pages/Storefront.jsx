@@ -337,11 +337,6 @@ export default function Storefront() {
                       <strong>{fmt.format(product.priceCents / 100)}</strong>
                       {product.compareAtCents && product.compareAtCents > product.priceCents && <del>{fmt.format(product.compareAtCents / 100)}</del>}
                     </div>
-                    {product.variants.length > 1 && (
-                      <select className="variant-select" value={selectedVariants[product.id] || product.variants.find((v) => v.stock > 0)?.id || ''} onChange={(e) => setSelectedVariants({ ...selectedVariants, [product.id]: e.target.value })}>
-                        {product.variants.map((v) => <option key={v.id} value={v.id} disabled={v.stock < 1}>{v.label}{v.stock < 1 ? ' · Tükendi' : ''}</option>)}
-                      </select>
-                    )}
                   </div>
                 </article>
               );

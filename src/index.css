@@ -935,3 +935,6 @@
   fill: #b83b3b;
   stroke: #b83b3b;
 }
+
+.card-info { padding-bottom: 0.8rem !important; }
+
