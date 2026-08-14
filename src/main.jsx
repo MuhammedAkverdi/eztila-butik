@@ -10,6 +10,13 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
   
+  // Try to read headers if they exist
+  let hasAuth = false;
+  if (args.length > 1 && args[1] && args[1].headers) {
+    const h = new Headers(args[1].headers);
+    if (h.has('authorization')) hasAuth = true;
+  }
+  
   if (url && url.startsWith('/api/')) {
     if (url === '/api/products') {
       return { ok: true, status: 200, json: async () => ({ products: MOCK_PRODUCTS }) };
@@ -18,6 +25,7 @@ window.fetch = async (...args) => {
       return { ok: true, status: 200, json: async () => ({ store: STORE_CONFIG }) };
     }
     if (url === '/api/account') {
+      if (!hasAuth) return { ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) };
       return { ok: true, status: 200, json: async () => ({ 
         customer: { fullName: '', email: 'demo@eztila.com', phone: '' }, 
         addresses: [], 
@@ -26,6 +34,7 @@ window.fetch = async (...args) => {
       }) };
     }
     if (url === '/api/account/orders') {
+      if (!hasAuth) return { ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) };
       return { ok: true, status: 200, json: async () => ({ orders: [] }) };
     }
   }
