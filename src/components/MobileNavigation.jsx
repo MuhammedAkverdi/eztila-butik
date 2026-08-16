@@ -39,24 +39,27 @@ export default function MobileNavigation({
   onCategorySelect,
   onSearch,
   onSignOut,
+  trendyolUrl,
   whatsappUrl,
 }) {
   const [open, setOpen] = useState(false);
   const [fallbackCategories, setFallbackCategories] = useState([]);
+  const [fallbackTrendyolUrl, setFallbackTrendyolUrl] = useState(null);
   const [fallbackWhatsappUrl, setFallbackWhatsappUrl] = useState(null);
   const triggerRef = useRef(null);
   const closeRef = useRef(null);
   const drawerId = 'mobile-store-navigation';
 
   useEffect(() => {
-    if (categories !== undefined && whatsappUrl !== undefined) return undefined;
+    if (categories !== undefined && trendyolUrl !== undefined && whatsappUrl !== undefined) return undefined;
     let active = true;
     Promise.all([
       categories === undefined ? getCatalogCategories().catch(() => []) : Promise.resolve([]),
-      whatsappUrl === undefined ? getStoreConfig().catch(() => null) : Promise.resolve(null),
+      trendyolUrl === undefined || whatsappUrl === undefined ? getStoreConfig().catch(() => null) : Promise.resolve(null),
     ]).then(([catalogCategories, config]) => {
       if (!active) return;
       if (categories === undefined) setFallbackCategories(catalogCategories);
+      if (trendyolUrl === undefined && config?.trendyolUrl) setFallbackTrendyolUrl(config.trendyolUrl);
       if (whatsappUrl === undefined && config?.whatsappNumber) {
         setFallbackWhatsappUrl(`https://wa.me/${config.whatsappNumber}?text=Merhaba%20Eztila%20Butik%2C%20yard%C4%B1m%20almak%20istiyorum.`);
       }
@@ -64,7 +67,7 @@ export default function MobileNavigation({
     return () => {
       active = false;
     };
-  }, [categories, whatsappUrl]);
+  }, [categories, trendyolUrl, whatsappUrl]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -98,6 +101,7 @@ export default function MobileNavigation({
     closeMenu();
   };
   const menuCategories = categories ?? fallbackCategories;
+  const menuTrendyolUrl = trendyolUrl ?? fallbackTrendyolUrl;
   const menuWhatsappUrl = whatsappUrl ?? fallbackWhatsappUrl;
 
   return (
@@ -157,6 +161,7 @@ export default function MobileNavigation({
                 </div>
               ) : null}
               <a href={accountHref} onClick={closeMenu}>{accountLabel}</a>
+              {menuTrendyolUrl ? <a href={menuTrendyolUrl} target="_blank" rel="noreferrer" onClick={closeMenu}>Trendyol Mağazamız</a> : null}
               {menuWhatsappUrl ? <a href={menuWhatsappUrl} target="_blank" rel="noreferrer" onClick={closeMenu}>WhatsApp Destek</a> : null}
               {onSignOut ? <button type="button" className="mobile-nav-signout" onClick={() => { closeMenu(); onSignOut(); }}>Çıkış Yap</button> : null}
             </nav>

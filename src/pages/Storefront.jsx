@@ -212,6 +212,10 @@ export default function Storefront() {
 
   const categories = useMemo(() => ['Tümü', ...categoryOptions.map((item) => item.name)], [categoryOptions]);
   const filterOptions = useMemo(() => getCatalogFilterOptions(products), [products]);
+  const categoryProductCounts = useMemo(() => products.reduce((counts, product) => {
+    counts[product.category] = (counts[product.category] || 0) + 1;
+    return counts;
+  }, {}), [products]);
 
   const toggleFilterValue = (setter, value) => {
     setter((current) => current.includes(value)
@@ -237,6 +241,11 @@ export default function Storefront() {
     const match = categoryOptions.find((item) => normalizeCatalogValue(item.name) === keyword)
       || categoryOptions.find((item) => normalizeCatalogValue(item.name).includes(keyword));
     setCategory(match?.name || 'Tümü');
+    document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const chooseCategory = (selectedCategory) => {
+    setCategory(selectedCategory);
     document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -270,7 +279,7 @@ export default function Storefront() {
   return (
     <main className="shop-shell">
       <div className="announcement">
-        <span>41 seçili butik ürün</span>
+        <span>{products.length ? `${products.length} seçili butik ürün` : 'Seçili butik koleksiyonu'}</span>
         <span>Trendyol üzerinden alışveriş</span>
         <span>WhatsApp ürün danışmanlığı</span>
       </div>
@@ -286,6 +295,7 @@ export default function Storefront() {
             document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
           }}
           onSearch={focusProductSearch}
+          trendyolUrl={storeConfig?.trendyolUrl}
           whatsappUrl={whatsappLink}
         />
         <a className="store-logo" href="#top" aria-label="Eztila Butik Ana Sayfa">
@@ -295,6 +305,7 @@ export default function Storefront() {
           <a href="#koleksiyon" onClick={() => chooseNavigationCategory('')}>Yeni sezon</a>
           <a href="/?category=elbise#koleksiyon" onClick={(event) => { event.preventDefault(); chooseNavigationCategory('elbise'); }}>Elbiseler</a>
           <a href="/?category=alt-ust-takim#koleksiyon" onClick={(event) => { event.preventDefault(); chooseNavigationCategory('takım'); }}>Takımlar</a>
+          {storeConfig?.trendyolUrl && <a href={storeConfig.trendyolUrl} target="_blank" rel="noreferrer">Trendyol</a>}
         </nav>
         <div className="header-tools">
           <button className="icon-button" onClick={focusProductSearch} aria-label="Ürün ara">
@@ -313,32 +324,67 @@ export default function Storefront() {
 
       <section className="commerce-hero" id="top">
         <div className="hero-content">
-          <p className="eyebrow">EZTİLA · YENİ KOLEKSİYON</p>
-          <h1>Tarzını<br />kendin yaz.</h1>
-          <p>Günün her anına eşlik eden modern, feminen ve özenle seçilmiş parçalar.</p>
-          <a className="button button-primary" href="#koleksiyon">Koleksiyonu keşfet <span>→</span></a>
+          <p className="eyebrow">EZTİLA BUTİK · KADIN GİYİM</p>
+          <h1>Kendine yakışanı keşfet.</h1>
+          <p>Modern ve özenle seçilmiş kadın giyim koleksiyonunu incele; beğendiğin parçaya Trendyol veya WhatsApp üzerinden ulaş.</p>
+          <div className="hero-actions">
+            <a className="button button-primary" href="#koleksiyon">Koleksiyonu keşfet <span>→</span></a>
+            {storeConfig?.trendyolUrl && (
+              <a className="button hero-secondary" href={storeConfig.trendyolUrl} target="_blank" rel="noreferrer">Trendyol mağazası</a>
+            )}
+          </div>
           <div className="hero-proof">
-            <span>41+ seçili ürün</span>
-            <span>Detaylı ürün galerileri</span>
-            <span>Trendyol &amp; WhatsApp erişimi</span>
+            <span>Seçili butik koleksiyonu</span>
+            <span>Trendyol &amp; WhatsApp üzerinden ulaşım</span>
           </div>
         </div>
         <div className="hero-image">
-          <img src={products.find((p) => p.featured)?.imageUrl || HERO_IMG} alt="Eztila yeni sezon kadın giyim" />
+          <img
+            src={products.find((p) => p.featured)?.imageUrl || HERO_IMG}
+            alt="Eztila Butik kadın giyim koleksiyonu"
+            width="900"
+            height="1125"
+            loading="eager"
+            fetchPriority="high"
+          />
           <div className="hero-badge">
-            <small>Yeni sezon</small>
-            <strong>Şimdi yayında</strong>
+            <small>Eztila seçkisi</small>
+            <strong>Yeni koleksiyon</strong>
           </div>
+        </div>
+      </section>
+
+      <section className="category-discovery" aria-labelledby="category-discovery-title">
+        <div className="category-discovery-heading">
+          <div>
+            <p className="eyebrow">STİLİNİ BUL</p>
+            <h2 id="category-discovery-title">Kategorilere göz at</h2>
+          </div>
+          <p>Günlük parçalardan özel gün seçimlerine, tüm koleksiyonu kendi stiline göre keşfet.</p>
+        </div>
+        <div className="category-discovery-list" aria-label="Ürün kategorileri">
+          {categoryOptions.map((item, index) => (
+            <button
+              type="button"
+              key={item.id || item.slug || item.name}
+              className={category === item.name ? 'active' : ''}
+              onClick={() => chooseCategory(item.name)}
+            >
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{item.name}</strong>
+              <small>{categoryProductCounts[item.name] || 0} ürün</small>
+            </button>
+          ))}
         </div>
       </section>
 
       <section className="catalog-section" id="koleksiyon">
         <div className="catalog-title">
           <div>
-            <p className="eyebrow">ONLINE MAĞAZA</p>
-            <h2>Tüm koleksiyon</h2>
+            <p className="eyebrow">EZTİLA KOLEKSİYONU</p>
+            <h2>Ürünleri keşfet</h2>
           </div>
-          <p>{products.length || 41} ürün · Özel seçilmiş butik parçalar</p>
+          <p>{products.length ? `${products.length} ürün · Özenle seçilmiş butik parçalar` : 'Özenle seçilmiş butik parçalar'}</p>
         </div>
         <div className="catalog-toolbar">
           <label className="search-box">
@@ -493,14 +539,16 @@ export default function Storefront() {
                         }}
                       />
                     </a>
-                    <a className="card-choice-button" href={`/urun/${product.slug}`}>Ürünü İncele</a>
                   </div>
                   <div className="card-info">
                     <span>{product.category}</span>
                     <h3><a href={`/urun/${product.slug}`}>{product.name}</a></h3>
-                    <div className="price-row">
-                      <strong>{fmt.format(product.priceCents / 100)}</strong>
-                      {product.compareAtCents && product.compareAtCents > product.priceCents && <del>{fmt.format(product.compareAtCents / 100)}</del>}
+                    <div className="card-footer-row">
+                      <div className="price-row">
+                        <strong>{fmt.format(product.priceCents / 100)}</strong>
+                        {product.compareAtCents && product.compareAtCents > product.priceCents && <del>{fmt.format(product.compareAtCents / 100)}</del>}
+                      </div>
+                      <a className="card-detail-link" href={`/urun/${product.slug}`}>Ürünü İncele <span aria-hidden="true">→</span></a>
                     </div>
                   </div>
                 </article>
@@ -523,15 +571,18 @@ export default function Storefront() {
 
       <section className="story-section" id="hakkimizda">
         <div>
-          <p className="eyebrow">EZTİLA DÜNYASI</p>
-          <h2>Her güne biraz<br />daha fazla sen.</h2>
-          <p>Koleksiyonlarımızı özgüvenli, rahat ve zamansız bir stil için seçiyoruz. Beden ve kombin konusunda WhatsApp üzerinden yanındayız.</p>
-          {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">Stil danışmanına yaz →</a>}
+          <p className="eyebrow">NASIL ULAŞIRSIN?</p>
+          <h2>Beğendiğin parçaya kolayca ulaş.</h2>
+          <p>Ürün detaylarını ve görsellerini Eztila'da incele. Ardından Trendyol mağazamıza geçebilir veya ürün hakkında WhatsApp'tan bize sorabilirsin.</p>
+          <div className="story-links">
+            {storeConfig?.trendyolUrl && <a href={storeConfig.trendyolUrl} target="_blank" rel="noreferrer">Trendyol mağazamız →</a>}
+            {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp'tan yaz →</a>}
+          </div>
         </div>
         <div className="story-cards">
-          <article><b>01</b><strong>Özenli seçim</strong><span>Trendleri Eztila çizgisiyle buluşturan koleksiyon.</span></article>
-          <article><b>02</b><strong>Hızlı destek</strong><span>Ürün, beden ve kombin sorularına WhatsApp'tan yanıt.</span></article>
-          <article><b>03</b><strong>Kolay erişim</strong><span>Beğendiğin ürün için Trendyol'a geç veya WhatsApp'tan bilgi al.</span></article>
+          <article><b>01</b><strong>Keşfet</strong><span>Gerçek ürün görselleri, renk ve beden seçenekleriyle koleksiyonu incele.</span></article>
+          <article><b>02</b><strong>Detaylara bak</strong><span>Ürün sayfasında galeri ve ürün bilgilerini bir arada gör.</span></article>
+          <article><b>03</b><strong>Bize ulaş</strong><span>Trendyol mağazamıza geç veya ürün hakkında WhatsApp'tan bilgi al.</span></article>
         </div>
       </section>
 
