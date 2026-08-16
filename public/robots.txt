@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eztila-butik.vercel.app/sitemap.xml

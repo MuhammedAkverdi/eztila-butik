@@ -6,8 +6,9 @@ import {
   getSizeOptions,
 } from '../lib/catalog-stock';
 import { getNextGalleryIndex, getProductGalleryImages } from '../lib/product-gallery';
-import ProductReviews from '../components/ProductReviews';
 import MobileNavigation from '../components/MobileNavigation';
+import StoreFooter from '../components/StoreFooter';
+import { getOrganizationSchema, setPageSeo, SITE_URL } from '../lib/seo';
 import { getAccountOverview } from '../services/account-service';
 import { getCatalogProductBySlug, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
@@ -103,6 +104,12 @@ export default function ProductDetail() {
     });
     return [...bySlug.values()];
   }, [allProducts]);
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+    return allProducts
+      .filter((item) => item.id !== product.id && item.categorySlug === product.categorySlug)
+      .slice(0, 4);
+  }, [allProducts, product]);
 
   useEffect(() => {
     Promise.all([
@@ -165,6 +172,59 @@ export default function ProductDetail() {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
   const waContactNumber = storeConfig?.whatsappNumber || '';
   const shareText = product ? `${product.name} - Eztila Butik` : 'Eztila Butik';
+  const currentPrice = selectedVariant?.priceCents || product?.priceCents || 0;
+  const trendyolUrl = getTrustedTrendyolUrl(product?.trendyolUrl, storeConfig?.trendyolUrl);
+  const footerWhatsappLink = waContactNumber
+    ? `https://wa.me/${waContactNumber}?text=${encodeURIComponent('Merhaba Eztila Butik, ürünleriniz hakkında bilgi almak istiyorum.')}`
+    : null;
+
+  useEffect(() => {
+    if (loading) return;
+    if (!product) {
+      setPageSeo({
+        title: loadError ? 'Ürün Yüklenemedi | Eztila Butik' : 'Ürün Bulunamadı | Eztila Butik',
+        description: loadError
+          ? 'Ürün bilgileri şu anda yüklenemiyor. Eztila Butik koleksiyonuna geri dönebilirsiniz.'
+          : 'Aradığınız ürün bulunamadı. Eztila Butik kadın giyim koleksiyonunu keşfedebilirsiniz.',
+        path: window.location.pathname,
+        robots: 'noindex,follow',
+      });
+      return;
+    }
+
+    const description = product.description?.trim()
+      || `${product.name} ürününün görsellerini, renk ve beden seçeneklerini Eztila Butik'te inceleyin.`;
+    const productSchema = {
+      '@type': 'Product',
+      '@id': `${SITE_URL}/urun/${product.slug}#product`,
+      name: product.name,
+      url: `${SITE_URL}/urun/${product.slug}`,
+      image: galleryImages.filter((image) => image && image !== LOGO),
+      category: product.category,
+      ...(product.description?.trim() ? { description: product.description.trim() } : {}),
+      ...(currentPrice > 0 ? {
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'TRY',
+          price: (currentPrice / 100).toFixed(2),
+          url: trendyolUrl,
+          seller: { '@id': `${SITE_URL}/#organization` },
+        },
+      } : {}),
+    };
+
+    setPageSeo({
+      title: `${product.name} | Eztila Butik`,
+      description: description.slice(0, 160),
+      path: `/urun/${product.slug}`,
+      image: galleryImages.find((image) => image && image !== LOGO),
+      type: 'product',
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@graph': [getOrganizationSchema(storeConfig, LOGO), productSchema],
+      },
+    });
+  }, [currentPrice, galleryImages, loadError, loading, product, storeConfig, trendyolUrl]);
 
   function handleShareFriend() {
     if (navigator.share) {
@@ -214,7 +274,8 @@ export default function ProductDetail() {
           <MobileNavigation />
           <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         </header>
-        <div style={{ textAlign: 'center', padding: '6rem 1rem', color: '#10204f' }}>
+        <div className="detail-state detail-loading" role="status">
+          <span aria-hidden="true" />
           <p>Ürün bilgileri yükleniyor…</p>
         </div>
       </main>
@@ -228,19 +289,24 @@ export default function ProductDetail() {
           <MobileNavigation />
           <a className="store-logo" href="/"><img src={LOGO} alt="Eztila Butik" /></a>
         </header>
-        <div className="empty-state">
-          <h3>{loadError ? 'Ürün bilgileri şu anda yüklenemiyor.' : 'Aradığınız ürün bulunamadı.'}</h3>
-          <a className="button button-primary" href="/#koleksiyon">Koleksiyona dön</a>
+        <div className="detail-state detail-error-state">
+          <p className="eyebrow">EZTİLA BUTİK</p>
+          <h1>{loadError ? 'Ürün bilgilerine şu anda ulaşamıyoruz.' : 'Aradığınız ürün bulunamadı.'}</h1>
+          <p>{loadError
+            ? 'Bağlantınızı kontrol edip tekrar deneyebilir veya koleksiyona dönebilirsiniz.'
+            : 'Ürün kaldırılmış ya da bağlantısı değişmiş olabilir. Güncel koleksiyona göz atabilirsiniz.'}</p>
+          <div>
+            {loadError && <button type="button" className="button detail-retry" onClick={() => window.location.reload()}>Tekrar dene</button>}
+            <a className="button button-primary" href="/#koleksiyon">Koleksiyona dön</a>
+          </div>
         </div>
       </main>
     );
   }
 
-  const currentPrice = selectedVariant?.priceCents || product.priceCents;
   const hasMultipleImages = galleryImages.length > 1;
   const selectedImage = galleryImages[selectedImageIndex] || LOGO;
   const displayedImage = failedImages.has(selectedImage) ? LOGO : selectedImage;
-  const trendyolUrl = getTrustedTrendyolUrl(product.trendyolUrl, storeConfig?.trendyolUrl);
   const whatsappMessage = `Merhaba, Eztila Butik'teki "${product.name}" ürünü hakkında bilgi almak istiyorum.${currentUrl ? `\nÜrün linki: ${currentUrl}` : ''}`;
   const waProductLink = waContactNumber
     ? `https://wa.me/${waContactNumber}?text=${encodeURIComponent(whatsappMessage)}`
@@ -249,7 +315,7 @@ export default function ProductDetail() {
   return (
     <main className="detail-shell">
       <div className="announcement">
-        <span>41 seçili butik ürün</span>
+        <span>{allProducts.length ? `${allProducts.length} seçili butik ürün` : 'Seçili butik koleksiyonu'}</span>
         <span>Trendyol üzerinden alışveriş</span>
         <span>WhatsApp ürün danışmanlığı</span>
       </div>
@@ -260,6 +326,7 @@ export default function ProductDetail() {
           favoriteCount={favorites.length}
           accountHref={account ? '/hesabim' : '/giris'}
           accountLabel={account ? 'Hesabım' : 'Giriş / Üye Ol'}
+          trendyolUrl={trendyolUrl}
           whatsappUrl={waProductLink}
         />
         <a className="store-logo" href="/" aria-label="Eztila Butik Ana Sayfa">
@@ -269,6 +336,7 @@ export default function ProductDetail() {
           <a href="/#koleksiyon">Yeni sezon</a>
           <a href="/?category=elbise#koleksiyon">Elbiseler</a>
           <a href="/?category=alt-ust-takim#koleksiyon">Takımlar</a>
+          <a href={trendyolUrl} target="_blank" rel="noreferrer">Trendyol</a>
         </nav>
         <div className="header-tools">
           <a className="icon-button" href="/" aria-label="Ürün ara">
@@ -355,21 +423,27 @@ export default function ProductDetail() {
           <p className="eyebrow">{product.category}</p>
           <h1>{product.name}</h1>
 
-          <div className="detail-price">
-            <strong>{fmt.format(currentPrice / 100)}</strong>
-            {product.compareAtCents && product.compareAtCents > currentPrice && (
-              <del>{fmt.format(product.compareAtCents / 100)}</del>
-            )}
+          <div className="detail-price-block">
+            <span>Katalog fiyatı</span>
+            <div className="detail-price">
+              <strong>{fmt.format(currentPrice / 100)}</strong>
+              {product.compareAtCents && product.compareAtCents > currentPrice && (
+                <del>{fmt.format(product.compareAtCents / 100)}</del>
+              )}
+            </div>
+            <small>Son fiyat ve ürün koşulları için Trendyol sayfasını inceleyin.</small>
           </div>
 
           {product.description && (
             <div className="detail-description">
+              <h2>Ürün hakkında</h2>
               <p>{product.description}</p>
             </div>
           )}
 
           {product.variants && product.variants.length > 1 && (
             <div className="detail-field">
+              <span className="detail-section-label">Renk ve beden seçenekleri</span>
               {colorOptions.length > 0 && (
                 <div className="variant-group">
                   <span className="variant-label">Renk: <strong>{selectedColor || 'Seçiniz'}</strong></span>
@@ -412,6 +486,10 @@ export default function ProductDetail() {
             </div>
           )}
 
+          <div className="detail-action-intro">
+            <strong>Ürüne nasıl ulaşabilirsin?</strong>
+            <span>Trendyol mağazamızda incele veya beden, renk ve ürün detayları için WhatsApp'tan bize sor.</span>
+          </div>
           <div className="detail-buy detail-external-actions">
             <a className="button button-primary trendyol-cta" href={trendyolUrl} target="_blank" rel="noreferrer">
               Trendyol'da İncele
@@ -478,7 +556,36 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <ProductReviews product={product} />
+      {relatedProducts.length > 0 && (
+        <section className="related-products" aria-labelledby="related-products-title">
+          <header>
+            <div>
+              <p className="eyebrow">AYNI KATEGORİDEN</p>
+              <h2 id="related-products-title">Benzer ürünler</h2>
+            </div>
+            <a href={`/?category=${encodeURIComponent(product.categorySlug || '')}#koleksiyon`}>Tümünü gör →</a>
+          </header>
+          <div className="related-products-grid">
+            {relatedProducts.map((item) => (
+              <article key={item.id} className="related-product-card">
+                <a className="related-product-media" href={`/urun/${item.slug}`}>
+                  <img src={item.imageUrl || LOGO} alt={item.name} width="600" height="800" loading="lazy" />
+                </a>
+                <div>
+                  <span>{item.category}</span>
+                  <h3><a href={`/urun/${item.slug}`}>{item.name}</a></h3>
+                  <div>
+                    <strong>{fmt.format(item.priceCents / 100)}</strong>
+                    <a href={`/urun/${item.slug}`} aria-label={`${item.name} ürününü incele`}>İncele →</a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <StoreFooter logoUrl={LOGO} storeConfig={storeConfig} whatsappUrl={footerWhatsappLink} />
     </main>
   );
 }

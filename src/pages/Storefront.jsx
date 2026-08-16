@@ -8,6 +8,8 @@ import {
 import { getAccountOverview } from '../services/account-service';
 import { getCatalogCategories, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 import MobileNavigation from '../components/MobileNavigation';
+import StoreFooter from '../components/StoreFooter';
+import { DEFAULT_DESCRIPTION, getOrganizationSchema, setPageSeo } from '../lib/seo';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
 const HERO_IMG = 'https://cdn.myikas.com/images/d22d5168-9c4e-4d2f-bf44-29933b7f8aad/f5595db0-5fe4-4b29-b14c-3da73997399c/image_1080.webp';
@@ -196,6 +198,19 @@ export default function Storefront() {
     };
   }, [filterOpen]);
 
+  useEffect(() => {
+    setPageSeo({
+      title: 'Eztila Butik | Kadın Giyim Koleksiyonu',
+      description: DEFAULT_DESCRIPTION,
+      path: '/',
+      image: products.find((item) => item.featured)?.imageUrl || products[0]?.imageUrl || LOGO,
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@graph': [getOrganizationSchema(storeConfig, LOGO)],
+      },
+    });
+  }, [products, storeConfig]);
+
   function toggleFavorite(product) {
     setFavorites((prev) => {
       const isFav = prev.some((p) => p.id === product.id);
@@ -354,7 +369,7 @@ export default function Storefront() {
         </div>
       </section>
 
-      <section className="category-discovery" aria-labelledby="category-discovery-title">
+      <section className="category-discovery" id="kategoriler" aria-labelledby="category-discovery-title">
         <div className="category-discovery-heading">
           <div>
             <p className="eyebrow">STİLİNİ BUL</p>
@@ -586,31 +601,7 @@ export default function Storefront() {
         </div>
       </section>
 
-      <footer className="store-footer">
-        <div><img src={LOGO} alt="Eztila Butik" /><p>Zarafetin ve şıklığın adresi.</p></div>
-        <div>
-          <strong>Keşfet</strong>
-          <a href="#koleksiyon">Tüm ürünler</a>
-          {storeConfig?.instagramUrl && <a href={storeConfig.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>}
-          {storeConfig?.trendyolUrl && <a href={storeConfig.trendyolUrl} target="_blank" rel="noreferrer">Trendyol</a>}
-        </div>
-        <div>
-          <strong>Destek</strong>
-          <a href="/hesabim">Müşteri hesabım</a>
-          {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp</a>}
-          {storeConfig?.contactPhone && <a href={`tel:${storeConfig.contactPhone}`}>{storeConfig.contactPhone}</a>}
-          {storeConfig?.contactEmail && <a href={`mailto:${storeConfig.contactEmail}`}>{storeConfig.contactEmail}</a>}
-        </div>
-        <div>
-          <strong>Yasal</strong>
-          <a href="/kvkk-aydinlatma">KVKK Aydınlatma</a>
-          <a href="/uyelik-sozlesmesi">Üyelik Sözleşmesi</a>
-          <a href="/on-bilgilendirme">Ön Bilgilendirme</a>
-          <a href="/mesafeli-satis">Mesafeli Satış</a>
-          <a href="/ticari-ileti">Ticari İleti İzni</a>
-          <span>© 2026 Eztila Butik · <a href="/admin">Yönetim</a></span>
-        </div>
-      </footer>
+      <StoreFooter logoUrl={LOGO} storeConfig={storeConfig} whatsappUrl={whatsappLink} />
 
       {whatsappLink && (
         <a className="floating-whatsapp" href={whatsappLink} target="_blank" rel="noreferrer" aria-label="WhatsApp Destek Hattı">

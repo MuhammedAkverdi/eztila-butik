@@ -7,6 +7,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function Loading() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/on-bilgilendirme" element={<LegalPage />} />
         <Route path="/mesafeli-satis" element={<LegalPage />} />
         <Route path="/ticari-ileti" element={<LegalPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );
