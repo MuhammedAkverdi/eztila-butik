@@ -36,20 +36,20 @@ assert.deepEqual(options.sizes.map((option) => option.key), ['s', 'm', 'l']);
 assert.equal(options.colors.filter((option) => option.key === 'siyah').length, 1);
 
 assert.deepEqual(filterCatalogProducts(products, {
-  search: 'elbise', category: 'Tümü', sizes: ['m'], colors: ['siyah'], inStockOnly: true,
+  search: 'elbise', category: 'Tümü', sizes: ['m'], colors: ['siyah'],
 }).map((product) => product.id), ['dress']);
 
 assert.equal(filterCatalogProducts(products, {
-  search: '', category: 'Elbiseler', sizes: ['m'], colors: ['beyaz'], inStockOnly: false,
+  search: '', category: 'Elbiseler', sizes: ['m'], colors: ['beyaz'],
 }).length, 0, 'Beden ve renk aynı gerçek varyantta eşleşmelidir.');
 
 assert.deepEqual(filterCatalogProducts(products, {
-  search: '', category: 'Tümü', sizes: [], colors: [], minPrice: '2000', maxPrice: '', inStockOnly: false,
+  search: '', category: 'Tümü', sizes: [], colors: [], minPrice: '2000', maxPrice: '',
 }).map((product) => product.id), ['set']);
 
 assert.deepEqual(filterCatalogProducts(products, {
-  search: '', category: 'Tümü', sizes: [], colors: [], minPrice: '', maxPrice: '', inStockOnly: true,
-}).map((product) => product.id), ['dress']);
+  search: '', category: 'Takımlar', sizes: ['l'], colors: ['krem'], minPrice: '', maxPrice: '',
+}).map((product) => product.id), ['set'], 'Stok bilgisi ürün keşfini etkilememelidir.');
 
 assert.deepEqual(sortCatalogProducts(products, 'high').map((product) => product.id), ['set', 'dress']);
 assert.deepEqual(getProductGalleryImages(products[0], 'fallback.webp'), ['primary.webp', 'detail.webp']);
@@ -62,5 +62,6 @@ console.log(JSON.stringify({
   sizes: options.sizes.map((option) => option.label),
   combinedFilters: true,
   sameVariantMatching: true,
+  stockIndependentDiscovery: true,
   galleryNavigation: true,
 }, null, 2));

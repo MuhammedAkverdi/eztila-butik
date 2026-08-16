@@ -35,13 +35,12 @@ export function getCatalogFilterOptions(products) {
   return { sizes, colors };
 }
 
-function variantMatches(variant, selectedSizes, selectedColors, inStockOnly) {
+function variantMatches(variant, selectedSizes, selectedColors) {
   const sizeMatches = selectedSizes.length === 0
     || selectedSizes.includes(normalizeCatalogValue(variant.size));
   const colorMatches = selectedColors.length === 0
     || selectedColors.includes(normalizeCatalogValue(variant.color));
-  const stockMatches = !inStockOnly || Number(variant.stock) > 0;
-  return sizeMatches && colorMatches && stockMatches;
+  return sizeMatches && colorMatches;
 }
 
 function parsePriceCents(value) {
@@ -57,7 +56,7 @@ export function filterCatalogProducts(products, filters) {
   const selectedColors = (filters.colors || []).map(normalizeCatalogValue);
   const minPriceCents = parsePriceCents(filters.minPrice);
   const maxPriceCents = parsePriceCents(filters.maxPrice);
-  const needsVariantMatch = selectedSizes.length > 0 || selectedColors.length > 0 || filters.inStockOnly;
+  const needsVariantMatch = selectedSizes.length > 0 || selectedColors.length > 0;
 
   return products.filter((product) => {
     if (category && category !== 'tümü' && normalizeCatalogValue(product.category) !== category) return false;
@@ -65,7 +64,7 @@ export function filterCatalogProducts(products, filters) {
     if (minPriceCents != null && product.priceCents < minPriceCents) return false;
     if (maxPriceCents != null && product.priceCents > maxPriceCents) return false;
     if (needsVariantMatch && !(product.variants || []).some((variant) => (
-      variantMatches(variant, selectedSizes, selectedColors, filters.inStockOnly)
+      variantMatches(variant, selectedSizes, selectedColors)
     ))) return false;
     return true;
   });

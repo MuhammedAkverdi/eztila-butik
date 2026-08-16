@@ -1417,7 +1417,9 @@
 }
 .mobile-nav-drawer > header button { font-size: 1.8rem; }
 .mobile-nav-drawer > nav {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.4rem 1.1rem 1.5rem;
@@ -1647,4 +1649,40 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-nav-drawer { animation: none; }
+}
+
+/* EXTERNAL SALES CTA */
+.detail-buy.detail-external-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.detail-external-actions .button {
+  width: 100%;
+  text-align: center;
+}
+
+.detail-external-actions .whatsapp-cta {
+  background: #1f9d62;
+  color: #fff;
+}
+
+.detail-external-actions .whatsapp-cta:hover {
+  background: #187d4e;
+}
+
+.detail-external-actions .whatsapp-cta.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 700px) {
+  .detail-buy.detail-external-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detail-external-actions .fav-detail-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
 }

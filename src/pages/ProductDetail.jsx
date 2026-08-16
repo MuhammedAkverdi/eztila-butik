@@ -1,19 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
-import {
-  addVariantToCart,
-  getCartReconciliationMessage,
-  hydrateCartItems,
-  reconcileCartItems,
-  setCartItemQuantity,
-} from '../lib/cart-catalog';
 import {
   findVariant,
   getColorOptions,
   getSizeOptions,
-  isProductSoldOut,
-  LOW_STOCK_MAX,
 } from '../lib/catalog-stock';
 import { getNextGalleryIndex, getProductGalleryImages } from '../lib/product-gallery';
 import ProductReviews from '../components/ProductReviews';
@@ -22,7 +12,22 @@ import { getAccountOverview } from '../services/account-service';
 import { getCatalogProductBySlug, getCatalogProducts, getStoreConfig } from '../services/catalog-service';
 
 const LOGO = 'https://cdn.myikas.com/images/theme-images/6c2e3155-6f89-4bee-ad12-391769e1a2c7/image_1080.webp';
+const TRENDYOL_STORE_URL = 'https://www.trendyol.com/magaza/eztila-m-977827';
 const fmt = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
+
+function getTrustedTrendyolUrl(...candidates) {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const url = new URL(candidate);
+      const isTrendyolHost = url.hostname === 'trendyol.com' || url.hostname.endsWith('.trendyol.com');
+      if (url.protocol === 'https:' && isTrendyolHost) return url.toString();
+    } catch {
+      // Geçersiz veya doğrulanamayan URL yerine mağaza bağlantısı kullanılır.
+    }
+  }
+  return TRENDYOL_STORE_URL;
+}
 
 function SearchIcon() {
   return (
@@ -50,16 +55,6 @@ function HeartIcon({ filled = false }) {
   );
 }
 
-function BagIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
-  );
-}
-
 export default function ProductDetail() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
@@ -81,33 +76,20 @@ export default function ProductDetail() {
     setSelectedColor(color);
     setSelectedSize('');
     setSelectedVariant(null);
-    setQuantity(1);
-    setStockNotice('');
   };
 
   const handleSizeChange = (size) => {
     const match = findVariant(product, { color: selectedColor || null, size });
-    if (!match || match.stock < 1) return;
+    if (!match) return;
     setSelectedSize(size);
     setSelectedVariant(match);
-    setQuantity(1);
-    setStockNotice('');
   };
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [failedImages, setFailedImages] = useState(() => new Set());
   const touchStartX = useRef(null);
-  const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favorites, setFavorites] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [stockNotice, setStockNotice] = useState('');
   const [account, setAccount] = useState(null);
-
-  // Coupon state
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(() => getSavedCoupon());
-  const [couponFeedback, setCouponFeedback] = useState(null);
 
   // Share state
   const [shareFeedback, setShareFeedback] = useState('');
@@ -137,24 +119,12 @@ export default function ProductDetail() {
 
       if (found) {
         const onlyVariant = found.variants?.length === 1 ? found.variants[0] : null;
-        const initialVariant = onlyVariant?.stock > 0 ? onlyVariant : null;
+        const initialVariant = onlyVariant || null;
         setSelectedVariant(initialVariant);
         setSelectedColor(initialVariant?.color || '');
         setSelectedSize(initialVariant?.size || '');
         setSelectedImageIndex(0);
         setFailedImages(new Set());
-
-        try {
-          const savedCart = JSON.parse(localStorage.getItem('eztila-cart') || '[]');
-          const reconciled = reconcileCartItems(savedCart, prods);
-          setCart(reconciled.items);
-          if (reconciled.changed) {
-            localStorage.setItem('eztila-cart', JSON.stringify(reconciled.items));
-          }
-          setStockNotice(getCartReconciliationMessage(reconciled.issues));
-        } catch {
-          setCart([]);
-        }
 
         try {
           const favs = JSON.parse(localStorage.getItem('eztila-favorites') || '[]');
@@ -192,37 +162,6 @@ export default function ProductDetail() {
     }
   }
 
-  function handleAddToCart() {
-    if (!product || !selectedVariant) {
-      setStockNotice('Lütfen renk ve beden seçin.');
-      return;
-    }
-    const result = addVariantToCart(cart, product, selectedVariant, quantity);
-    setCart(result.items);
-    localStorage.setItem('eztila-cart', JSON.stringify(result.items));
-    setStockNotice(result.error);
-    if (!result.error || result.items !== cart) setCartOpen(true);
-  }
-
-  function updateQty(item, qty) {
-    const result = setCartItemQuantity(cart, allProducts, item, qty);
-    setCart(result.items);
-    localStorage.setItem('eztila-cart', JSON.stringify(result.items));
-    setStockNotice(result.error);
-  }
-
-  const cartItems = useMemo(() => hydrateCartItems(cart, allProducts), [cart, allProducts]);
-
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  const rawSubtotalCents = cartItems.reduce((sum, item) =>
-    sum + (item.isQuantityValid ? item.variant.priceCents * item.quantity : 0), 0);
-
-  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? Number.POSITIVE_INFINITY;
-  const standardShippingFee = storeConfig?.shippingFeeCents ?? 0;
-  const shippingFee = (rawSubtotalCents >= freeThreshold || rawSubtotalCents === 0) ? 0 : standardShippingFee;
-  const finalTotalCents = rawSubtotalCents + shippingFee;
-
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
   const waContactNumber = storeConfig?.whatsappNumber || '';
   const shareText = product ? `${product.name} - Eztila Butik` : 'Eztila Butik';
@@ -243,12 +182,6 @@ export default function ProductDetail() {
   function handleShareWA() {
     const text = encodeURIComponent(`${shareText}\n${currentUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
-  }
-
-  function handleContactWA() {
-    if (!waContactNumber) return;
-    const text = encodeURIComponent(`Merhaba, "${product?.name}" ürünü hakkında bilgi almak istiyorum.\nLink: ${currentUrl}`);
-    window.open(`https://wa.me/${waContactNumber}?text=${text}`, '_blank');
   }
 
   function moveGallery(direction) {
@@ -304,31 +237,29 @@ export default function ProductDetail() {
   }
 
   const currentPrice = selectedVariant?.priceCents || product.priceCents;
-  const soldOut = isProductSoldOut(product);
-  const currentStock = selectedVariant?.stock ?? 0;
   const hasMultipleImages = galleryImages.length > 1;
   const selectedImage = galleryImages[selectedImageIndex] || LOGO;
   const displayedImage = failedImages.has(selectedImage) ? LOGO : selectedImage;
+  const trendyolUrl = getTrustedTrendyolUrl(product.trendyolUrl, storeConfig?.trendyolUrl);
+  const whatsappMessage = `Merhaba, Eztila Butik'teki "${product.name}" ürünü hakkında bilgi almak istiyorum.${currentUrl ? `\nÜrün linki: ${currentUrl}` : ''}`;
   const waProductLink = waContactNumber
-    ? `https://wa.me/${waContactNumber}?text=${encodeURIComponent(`Merhaba Eztila Butik, "${product.name}" hakkında bilgi ve beden danışmanlığı almak istiyorum.`)}`
+    ? `https://wa.me/${waContactNumber}?text=${encodeURIComponent(whatsappMessage)}`
     : null;
 
   return (
     <main className="detail-shell">
       <div className="announcement">
-        <span>Türkiye geneli gönderim</span>
-        <span>Güvenli ödeme altyapısı</span>
+        <span>41 seçili butik ürün</span>
+        <span>Trendyol üzerinden alışveriş</span>
         <span>WhatsApp ürün danışmanlığı</span>
       </div>
 
       <header className="store-header">
         <MobileNavigation
           categories={mobileCategories}
-          cartCount={cartCount}
           favoriteCount={favorites.length}
           accountHref={account ? '/hesabim' : '/giris'}
           accountLabel={account ? 'Hesabım' : 'Giriş / Üye Ol'}
-          onCartOpen={() => setCartOpen(true)}
           whatsappUrl={waProductLink}
         />
         <a className="store-logo" href="/" aria-label="Eztila Butik Ana Sayfa">
@@ -338,7 +269,6 @@ export default function ProductDetail() {
           <a href="/#koleksiyon">Yeni sezon</a>
           <a href="/?category=elbise#koleksiyon">Elbiseler</a>
           <a href="/?category=alt-ust-takim#koleksiyon">Takımlar</a>
-          <a href="/siparis-takip">Sipariş takip</a>
         </nav>
         <div className="header-tools">
           <a className="icon-button" href="/" aria-label="Ürün ara">
@@ -352,11 +282,6 @@ export default function ProductDetail() {
             <span className="account-link-icon" aria-hidden="true"><UserIcon /></span>
             <span className="account-link-text">{account ? 'Hesabım' : 'Giriş / Üye ol'}</span>
           </a>
-          <button className="cart-button" onClick={() => setCartOpen(true)} aria-label={`Sepetim, ${cartCount} ürün`}>
-            <span className="cart-btn-icon"><BagIcon /></span>
-            <span className="cart-btn-label">Sepet</span>
-            <b>{cartCount}</b>
-          </button>
         </div>
       </header>
 
@@ -437,20 +362,6 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {currentStock > 0 && currentStock <= LOW_STOCK_MAX && (
-            <div className="fomo-triggers">
-              <div className="fomo-low-stock">
-                Son <strong>{currentStock}</strong> adet
-              </div>
-            </div>
-          )}
-
-          {soldOut && (
-            <p className="product-stock-status sold-out" role="status">
-              Bu ürünün tüm seçenekleri şu anda tükenmiştir.
-            </p>
-          )}
-
           {product.description && (
             <div className="detail-description">
               <p>{product.description}</p>
@@ -467,10 +378,9 @@ export default function ProductDetail() {
                       <button 
                         key={option.value}
                         type="button"
-                        className={`color-swatch ${option.value === selectedColor ? 'active' : ''} ${!option.isAvailable ? 'out-of-stock' : ''}`}
+                        className={`color-swatch ${option.value === selectedColor ? 'active' : ''}`}
                         onClick={() => handleColorChange(option.value)}
-                        title={option.isAvailable ? option.value : `${option.value} — Tükendi`}
-                        disabled={!option.isAvailable}
+                        title={option.value}
                       >
                         {option.value}
                       </button>
@@ -489,10 +399,9 @@ export default function ProductDetail() {
                         <button 
                           key={option.variant.id}
                           type="button"
-                          className={`size-box ${option.value === selectedSize ? 'active' : ''} ${!option.isAvailable ? 'out-of-stock' : ''}`}
+                          className={`size-box ${option.value === selectedSize ? 'active' : ''}`}
                           onClick={() => handleSizeChange(option.value)}
-                          disabled={!option.isAvailable}
-                          title={option.isAvailable ? `${option.stock} adet stokta` : 'Tükendi'}
+                          title={option.value}
                         >
                           {option.value}
                         </button>
@@ -503,24 +412,17 @@ export default function ProductDetail() {
             </div>
           )}
 
-          <div className="detail-buy">
-            <div className="detail-qty">
-              <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={!selectedVariant}>−</button>
-              <b>{quantity}</b>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
-                disabled={!selectedVariant || quantity >= currentStock}
-              >+</button>
-            </div>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={handleAddToCart}
-              disabled={!selectedVariant || currentStock < 1}
-            >
-              {soldOut ? 'Tükendi' : selectedVariant ? 'Sepete Ekle' : 'Seçenek Seçin'}
-            </button>
+          <div className="detail-buy detail-external-actions">
+            <a className="button button-primary trendyol-cta" href={trendyolUrl} target="_blank" rel="noreferrer">
+              Trendyol'da İncele
+            </a>
+            {waProductLink ? (
+              <a className="button whatsapp-cta" href={waProductLink} target="_blank" rel="noreferrer">
+                WhatsApp'tan Sor
+              </a>
+            ) : (
+              <span className="button whatsapp-cta disabled" aria-disabled="true">WhatsApp'tan Sor</span>
+            )}
             <button
               type="button"
               className={`icon-button fav-detail-btn ${isFavorite ? 'active' : ''}`}
@@ -530,20 +432,8 @@ export default function ProductDetail() {
               <HeartIcon filled={isFavorite} />
             </button>
           </div>
-          {stockNotice && (
-            <p className="stock-feedback" role="status">{stockNotice}</p>
-          )}
-          {soldOut && (
-            <p className="stock-notify-note" role="status">
-              Stok bildirimi hizmeti henüz aktif değildir.
-            </p>
-          )}
 
           <div className="social-share-block">
-            <button type="button" className="share-btn wa-consult" onClick={handleContactWA} disabled={!waContactNumber}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              WhatsApp'tan Danış
-            </button>
             <button type="button" className="share-btn wa-share" onClick={handleShareWA}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
               WhatsApp ile Paylaş
@@ -559,8 +449,8 @@ export default function ProductDetail() {
             <article>
               <b>✦</b>
               <div>
-                <strong>Aynı Gün / Hızlı Kargolama</strong>
-                <span>Siparişiniz özenle paketlenerek 1-2 iş günü içinde kargoya verilir.</span>
+                <strong>Trendyol'da İncele</strong>
+                <span>Satın alma, teslimat ve iade koşullarını Trendyol ürün sayfasında görebilirsiniz.</span>
               </div>
             </article>
             <article>
@@ -580,8 +470,8 @@ export default function ProductDetail() {
             <article>
               <b>✦</b>
               <div>
-                <strong>Kolay Değişim ve İade</strong>
-                <span>14 gün içinde koşulsuz iade ve değişim güvencesi.</span>
+                <strong>Ürün Detaylarını Keşfedin</strong>
+                <span>Renk, beden ve ürün görsellerini inceleyerek size uygun seçeneği değerlendirin.</span>
               </div>
             </article>
           </div>
@@ -589,75 +479,6 @@ export default function ProductDetail() {
       </section>
 
       <ProductReviews product={product} />
-
-      {/* CART DRAWER ON PRODUCT DETAIL */}
-      {cartOpen && (
-        <div className="overlay" onMouseDown={() => setCartOpen(false)}>
-          <aside className="cart-drawer" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="drawer-head">
-              <div>
-                <small>EZTİLA</small>
-                <h2>Sepetim ({cartCount})</h2>
-              </div>
-              <button type="button" onClick={() => setCartOpen(false)}>×</button>
-            </div>
-            <div className="cart-lines">
-              {cartItems.length ? cartItems.map((item) => (
-                <article key={`${item.productId}-${item.variantLabel}`}>
-                  <img src={item.product?.imageUrl || LOGO} alt="" />
-                  <div>
-                    <h3>{item.product?.name}</h3>
-                    <span>{item.variantLabel}</span>
-                    <strong>{fmt.format(item.variant.priceCents / 100)}</strong>
-                    {!item.isAvailable && (
-                      <p className="cart-stock-warning">Bu ürün şu anda stokta bulunmuyor.</p>
-                    )}
-                    <div className="qty">
-                      <button type="button" onClick={() => updateQty(item, item.quantity - 1)}>−</button>
-                      <b>{item.quantity}</b>
-                      <button
-                        type="button"
-                        onClick={() => updateQty(item, item.quantity + 1)}
-                        disabled={!item.isAvailable || item.quantity >= item.stock}
-                      >+</button>
-                    </div>
-                  </div>
-                </article>
-              )) : (
-                <div className="cart-empty">
-                  <span>♡</span>
-                  <h3>Sepetin henüz boş.</h3>
-                  <button type="button" onClick={() => setCartOpen(false)}>Alışverişe dön</button>
-                </div>
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="cart-summary">
-                <div className="cart-calc-rows">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                    <span style={{ color: '#666', fontWeight: '500' }}>Ara toplam</span>
-                    <strong style={{ color: '#1a2a47' }}>{fmt.format(rawSubtotalCents / 100)}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '1.2rem', borderBottom: '1px solid #eee' }}>
-                    <span style={{ color: '#666', fontWeight: '500' }}>Kargo</span>
-                    <strong style={{ color: '#1a2a47' }}>{shippingFee === 0 ? 'Ücretsiz' : fmt.format(shippingFee / 100)}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                    <span style={{ color: '#1a2a47' }}>Toplam</span>
-                    <strong style={{ color: '#1a2a47' }}>{fmt.format(finalTotalCents / 100)}</strong>
-                  </div>
-                </div>
-
-                <a style={{ display: 'block', backgroundColor: '#1a2a47', color: '#fff', textAlign: 'center', padding: '1rem', fontWeight: 'bold', textDecoration: 'none', letterSpacing: '0.5px' }} href="/sepetim">
-                  SATIN AL →
-                </a>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
-
     </main>
   );
 }

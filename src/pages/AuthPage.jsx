@@ -213,10 +213,10 @@ export default function AuthPage({ initialMode = 'login', next = '/' }) {
               {mode === 'login' && 'Tekrar hoş geldin'}
             </h2>
             <span>
-              {mode === 'signup' && 'Favori parçalarına, adreslerine ve siparişlerine tek yerden ulaş.'}
+              {mode === 'signup' && 'Favori parçalarını kaydet ve koleksiyonu kendi seçkine dönüştür.'}
               {mode === 'forgot' && 'E-postanı yaz, sana güvenli yenileme bağlantısı gönderelim.'}
               {mode === 'new-password' && 'Hesabın için güçlü ve yeni bir şifre oluştur.'}
-              {mode === 'login' && 'Siparişlerini takip et, adreslerini kaydet ve alışverişini hızlandır.'}
+              {mode === 'login' && 'Favori parçalarına ve hesap ayarlarına tek yerden ulaş.'}
             </span>
           </div>
 

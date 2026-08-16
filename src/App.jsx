@@ -1,4 +1,4 @@
-import { Routes, Route, useSearchParams } from 'react-router-dom';
+import { Navigate, Routes, Route, useSearchParams } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
 const Storefront = lazy(() => import('./pages/Storefront'));
@@ -6,9 +6,6 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
-const CartPage = lazy(() => import('./pages/CartPage'));
-const TrackingPage = lazy(() => import('./pages/TrackingPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 
 function Loading() {
@@ -36,9 +33,9 @@ export default function App() {
         <Route path="/hesabim" element={<AccountPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/urun/:slug" element={<ProductDetail />} />
-        <Route path="/sepetim" element={<CartPage />} />
-        <Route path="/odeme" element={<CheckoutPage />} />
-        <Route path="/siparis-takip" element={<TrackingPage />} />
+        <Route path="/sepetim" element={<Navigate to="/#koleksiyon" replace />} />
+        <Route path="/odeme" element={<Navigate to="/#koleksiyon" replace />} />
+        <Route path="/siparis-takip" element={<Navigate to="/#koleksiyon" replace />} />
         <Route path="/kvkk-aydinlatma" element={<LegalPage />} />
         <Route path="/uyelik-sozlesmesi" element={<LegalPage />} />
         <Route path="/on-bilgilendirme" element={<LegalPage />} />

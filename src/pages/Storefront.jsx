@@ -1,18 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { validateAndApplyCoupon, getSavedCoupon, saveActiveCoupon } from '../lib/coupons';
-import {
-  addVariantToCart,
-  getCartReconciliationMessage,
-  hydrateCartItems,
-  reconcileCartItems,
-  setCartItemQuantity,
-} from '../lib/cart-catalog';
-import {
-  getDirectPurchaseVariant,
-  getProductStock,
-  isProductSoldOut,
-  LOW_STOCK_MAX,
-} from '../lib/catalog-stock';
 import {
   filterCatalogProducts,
   getCatalogFilterOptions,
@@ -53,16 +39,6 @@ function HeartIcon({ filled = false }) {
   );
 }
 
-function BagIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
-  );
-}
-
 function WhatsAppIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -85,8 +61,6 @@ function CatalogFilters({
   maxPrice,
   onMinPriceChange,
   onMaxPriceChange,
-  inStockOnly,
-  onStockChange,
   onClear,
   showCategory = false,
 }) {
@@ -147,11 +121,6 @@ function CatalogFilters({
         </div>
       </fieldset>
 
-      <label className="filter-stock">
-        <input type="checkbox" checked={inStockOnly} onChange={(event) => onStockChange(event.target.checked)} />
-        <span>Yalnız stokta olanlar</span>
-      </label>
-
       <button type="button" className="filter-clear" onClick={onClear}>Filtreleri temizle</button>
     </div>
   );
@@ -163,9 +132,6 @@ export default function Storefront() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Tümü');
   const [sort, setSort] = useState('featured');
-  const [cart, setCart] = useState([]);
-  const [cartReady, setCartReady] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [notice, setNotice] = useState('');
   const [storeConfig, setStoreConfig] = useState(null);
@@ -176,13 +142,7 @@ export default function Storefront() {
   const [selectedColors, setSelectedColors] = useState([]);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [inStockOnly, setInStockOnly] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-
-  // Coupon state
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(() => getSavedCoupon());
-  const [couponFeedback, setCouponFeedback] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -208,15 +168,10 @@ export default function Storefront() {
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
-      try { setCart(JSON.parse(localStorage.getItem('eztila-cart') || '[]')); } catch { setCart([]); }
       try { setFavorites(JSON.parse(localStorage.getItem('eztila-favorites') || '[]')); } catch { setFavorites([]); }
-      setCartReady(true);
     });
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get('openCart') === 'true') {
-      setCartOpen(true);
-    }
     if (params.get('focusSearch') === 'true') {
       requestAnimationFrame(() => {
         document.querySelector('#koleksiyon')?.scrollIntoView();
@@ -226,18 +181,6 @@ export default function Storefront() {
 
     return () => cancelAnimationFrame(raf);
   }, []);
-
-  useEffect(() => {
-    if (!cartReady || loading || catalogError) return;
-    const reconciled = reconcileCartItems(cart, products);
-    if (reconciled.changed) setCart(reconciled.items);
-    const reconciliationNotice = getCartReconciliationMessage(reconciled.issues);
-    if (reconciliationNotice) setNotice(reconciliationNotice);
-  }, [cartReady, loading, catalogError, products]);
-
-  useEffect(() => {
-    if (cartReady) localStorage.setItem('eztila-cart', JSON.stringify(cart));
-  }, [cart, cartReady]);
 
   useEffect(() => {
     if (!filterOpen) return undefined;
@@ -283,7 +226,6 @@ export default function Storefront() {
     setSelectedColors([]);
     setMinPrice('');
     setMaxPrice('');
-    setInStockOnly(false);
   };
 
   const chooseNavigationCategory = (keyword) => {
@@ -302,8 +244,7 @@ export default function Storefront() {
     + selectedColors.length
     + (category === 'Tümü' ? 0 : 1)
     + (minPrice ? 1 : 0)
-    + (maxPrice ? 1 : 0)
-    + (inStockOnly ? 1 : 0);
+    + (maxPrice ? 1 : 0);
 
   const filtered = useMemo(() => {
     const result = filterCatalogProducts(products, {
@@ -313,66 +254,13 @@ export default function Storefront() {
       colors: selectedColors,
       minPrice,
       maxPrice,
-      inStockOnly,
     });
     return sortCatalogProducts(result, sort);
-  }, [products, category, search, selectedSizes, selectedColors, minPrice, maxPrice, inStockOnly, sort]);
+  }, [products, category, search, selectedSizes, selectedColors, minPrice, maxPrice, sort]);
 
-  const cartItems = useMemo(() => hydrateCartItems(cart, products), [cart, products]);
-
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const rawSubtotalCents = cartItems.reduce((sum, item) =>
-    sum + (item.isQuantityValid ? item.variant.priceCents * item.quantity : 0), 0);
-
-  // Recalculate applied coupon against current subtotal
-  const currentCouponResult = useMemo(() => {
-    if (!appliedCoupon) return null;
-    return validateAndApplyCoupon(appliedCoupon.code, rawSubtotalCents);
-  }, [appliedCoupon, rawSubtotalCents]);
-
-  const discountCents = currentCouponResult?.valid ? currentCouponResult.discountCents : 0;
-  const isCouponFreeShipping = currentCouponResult?.valid && currentCouponResult.isFreeShipping;
-
-  const freeThreshold = storeConfig?.freeShippingThresholdCents ?? Number.POSITIVE_INFINITY;
-  const standardShippingFee = storeConfig?.shippingFeeCents ?? 0;
-  const shippingFee = (rawSubtotalCents >= freeThreshold || rawSubtotalCents === 0 || isCouponFreeShipping) ? 0 : standardShippingFee;
-  const finalTotalCents = Math.max(0, rawSubtotalCents - discountCents) + shippingFee;
   const whatsappLink = storeConfig?.whatsappNumber
     ? `https://wa.me/${storeConfig.whatsappNumber}?text=Merhaba%20Eztila%20Butik%2C%20yard%C4%B1m%20almak%20istiyorum.`
     : null;
-
-  function handleApplyCoupon(e) {
-    e?.preventDefault();
-    setCouponFeedback(null);
-    const res = validateAndApplyCoupon(couponInput, rawSubtotalCents);
-    if (!res.valid) {
-      setCouponFeedback({ type: 'error', text: res.message });
-      return;
-    }
-    setAppliedCoupon(res);
-    saveActiveCoupon(res);
-    setCouponFeedback({ type: 'success', text: `Tebrikler! "${res.code}" kuponu başarıyla uygulandı.` });
-    setCouponInput('');
-  }
-
-  function handleRemoveCoupon() {
-    setAppliedCoupon(null);
-    saveActiveCoupon(null);
-    setCouponFeedback({ type: 'info', text: 'Kupon kaldırıldı.' });
-  }
-
-  function addToCart(product, variant) {
-    const result = addVariantToCart(cart, product, variant, 1);
-    setCart(result.items);
-    setNotice(result.error);
-    if (!result.error || result.items !== cart) setCartOpen(true);
-  }
-
-  function updateQty(item, qty) {
-    const result = setCartItemQuantity(cart, products, item, qty);
-    setCart(result.items);
-    setNotice(result.error);
-  }
 
   function focusProductSearch() {
     document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
@@ -382,15 +270,14 @@ export default function Storefront() {
   return (
     <main className="shop-shell">
       <div className="announcement">
-        <span>Türkiye geneli gönderim</span>
-        <span>Güvenli ödeme altyapısı</span>
+        <span>41 seçili butik ürün</span>
+        <span>Trendyol üzerinden alışveriş</span>
         <span>WhatsApp ürün danışmanlığı</span>
       </div>
 
       <header className="store-header">
         <MobileNavigation
           categories={categoryOptions}
-          cartCount={cartCount}
           favoriteCount={favorites.length}
           accountHref={account ? '/hesabim' : '/giris'}
           accountLabel={account ? 'Hesabım' : 'Giriş / Üye Ol'}
@@ -399,7 +286,6 @@ export default function Storefront() {
             document.querySelector('#koleksiyon')?.scrollIntoView({ behavior: 'smooth' });
           }}
           onSearch={focusProductSearch}
-          onCartOpen={() => setCartOpen(true)}
           whatsappUrl={whatsappLink}
         />
         <a className="store-logo" href="#top" aria-label="Eztila Butik Ana Sayfa">
@@ -409,7 +295,6 @@ export default function Storefront() {
           <a href="#koleksiyon" onClick={() => chooseNavigationCategory('')}>Yeni sezon</a>
           <a href="/?category=elbise#koleksiyon" onClick={(event) => { event.preventDefault(); chooseNavigationCategory('elbise'); }}>Elbiseler</a>
           <a href="/?category=alt-ust-takim#koleksiyon" onClick={(event) => { event.preventDefault(); chooseNavigationCategory('takım'); }}>Takımlar</a>
-          <a href="/siparis-takip">Sipariş takip</a>
         </nav>
         <div className="header-tools">
           <button className="icon-button" onClick={focusProductSearch} aria-label="Ürün ara">
@@ -423,11 +308,6 @@ export default function Storefront() {
             <span className="account-link-icon" aria-hidden="true"><UserIcon /></span>
             <span className="account-link-text">{account ? 'Hesabım' : 'Giriş / Üye ol'}</span>
           </a>
-          <button className="cart-button" onClick={() => setCartOpen(true)} aria-label={`Sepetim, ${cartCount} ürün`}>
-            <span className="cart-btn-icon"><BagIcon /></span>
-            <span className="cart-btn-label">Sepet</span>
-            <b>{cartCount}</b>
-          </button>
         </div>
       </header>
 
@@ -439,8 +319,8 @@ export default function Storefront() {
           <a className="button button-primary" href="#koleksiyon">Koleksiyonu keşfet <span>→</span></a>
           <div className="hero-proof">
             <span>41+ seçili ürün</span>
-            <span>Güncel fiyat &amp; stok</span>
-            <span>Kolay iade</span>
+            <span>Detaylı ürün galerileri</span>
+            <span>Trendyol &amp; WhatsApp erişimi</span>
           </div>
         </div>
         <div className="hero-image">
@@ -506,8 +386,6 @@ export default function Storefront() {
             maxPrice={maxPrice}
             onMinPriceChange={setMinPrice}
             onMaxPriceChange={setMaxPrice}
-            inStockOnly={inStockOnly}
-            onStockChange={setInStockOnly}
             onClear={clearFilters}
           />
         </div>
@@ -528,7 +406,6 @@ export default function Storefront() {
             ))}
             {minPrice && <button type="button" onClick={() => setMinPrice('')}>En az {minPrice} ₺ ×</button>}
             {maxPrice && <button type="button" onClick={() => setMaxPrice('')}>En fazla {maxPrice} ₺ ×</button>}
-            {inStockOnly && <button type="button" onClick={() => setInStockOnly(false)}>Stokta olanlar ×</button>}
             <button type="button" className="clear-all-filters" onClick={clearFilters}>Filtreleri temizle</button>
           </div>
         )}
@@ -562,8 +439,6 @@ export default function Storefront() {
                   maxPrice={maxPrice}
                   onMinPriceChange={setMinPrice}
                   onMaxPriceChange={setMaxPrice}
-                  inStockOnly={inStockOnly}
-                  onStockChange={setInStockOnly}
                   onClear={clearFilters}
                   showCategory
                 />
@@ -583,19 +458,10 @@ export default function Storefront() {
           <div className="commerce-grid">
             {filtered.map((product, idx) => {
               const isFavorite = favorites.some((f) => f.id === product.id);
-              const totalStock = getProductStock(product);
-              const soldOut = isProductSoldOut(product);
-              const directVariant = getDirectPurchaseVariant(product);
               return (
                 <article key={product.id} className="commerce-card">
                   <div className="card-media">
                     {(() => {
-                      if (soldOut) {
-                        return <span className="sold-out-badge">TÜKENDİ</span>;
-                      }
-                      if (totalStock > 0 && totalStock <= LOW_STOCK_MAX) {
-                        return <span className="fomo-low-stock-badge">Son {totalStock} adet</span>;
-                      }
                       if (product.compareAtCents && product.compareAtCents > product.priceCents) {
                         return <span className="sale-badge">İNDİRİM</span>;
                       }
@@ -627,13 +493,7 @@ export default function Storefront() {
                         }}
                       />
                     </a>
-                    {soldOut ? (
-                      <button type="button" disabled>Tükendi</button>
-                    ) : directVariant ? (
-                      <button type="button" onClick={() => addToCart(product, directVariant)}>Sepete Ekle</button>
-                    ) : (
-                      <a className="card-choice-button" href={`/urun/${product.slug}`}>Seçenekleri Gör</a>
-                    )}
+                    <a className="card-choice-button" href={`/urun/${product.slug}`}>Ürünü İncele</a>
                   </div>
                   <div className="card-info">
                     <span>{product.category}</span>
@@ -671,7 +531,7 @@ export default function Storefront() {
         <div className="story-cards">
           <article><b>01</b><strong>Özenli seçim</strong><span>Trendleri Eztila çizgisiyle buluşturan koleksiyon.</span></article>
           <article><b>02</b><strong>Hızlı destek</strong><span>Ürün, beden ve kombin sorularına WhatsApp'tan yanıt.</span></article>
-          <article><b>03</b><strong>Güvenli alışveriş</strong><span>Fiyatı, stoku ve sipariş durumunu şeffaf gör.</span></article>
+          <article><b>03</b><strong>Kolay erişim</strong><span>Beğendiğin ürün için Trendyol'a geç veya WhatsApp'tan bilgi al.</span></article>
         </div>
       </section>
 
@@ -686,7 +546,6 @@ export default function Storefront() {
         <div>
           <strong>Destek</strong>
           <a href="/hesabim">Müşteri hesabım</a>
-          <a href="/siparis-takip">Sipariş takip</a>
           {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp</a>}
           {storeConfig?.contactPhone && <a href={`tel:${storeConfig.contactPhone}`}>{storeConfig.contactPhone}</a>}
           {storeConfig?.contactEmail && <a href={`mailto:${storeConfig.contactEmail}`}>{storeConfig.contactEmail}</a>}
@@ -701,74 +560,6 @@ export default function Storefront() {
           <span>© 2026 Eztila Butik · <a href="/admin">Yönetim</a></span>
         </div>
       </footer>
-
-      {/* CART DRAWER */}
-      {cartOpen && (
-        <div className="overlay" onMouseDown={() => setCartOpen(false)}>
-          <aside className="cart-drawer" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="drawer-head">
-              <div>
-                <small>EZTİLA</small>
-                <h2>Sepetim ({cartCount})</h2>
-              </div>
-              <button type="button" onClick={() => setCartOpen(false)}>×</button>
-            </div>
-            
-            <div className="cart-lines">
-              {cartItems.length ? cartItems.map((item) => (
-                <article key={`${item.productId}-${item.variantLabel}`}>
-                  <img src={item.product?.imageUrl || LOGO} alt="" />
-                  <div>
-                    <h3>{item.product?.name}</h3>
-                    <span>{item.variantLabel}</span>
-                    <strong>{fmt.format(item.variant.priceCents / 100)}</strong>
-                    {!item.isAvailable && (
-                      <p className="cart-stock-warning">Bu ürün şu anda stokta bulunmuyor.</p>
-                    )}
-                    <div className="qty">
-                      <button onClick={() => updateQty(item, item.quantity - 1)}>−</button>
-                      <b>{item.quantity}</b>
-                      <button
-                        onClick={() => updateQty(item, item.quantity + 1)}
-                        disabled={!item.isAvailable || item.quantity >= item.stock}
-                      >+</button>
-                    </div>
-                  </div>
-                </article>
-              )) : (
-                <div className="cart-empty">
-                  <span>♡</span>
-                  <h3>Sepetin henüz boş.</h3>
-                  <button onClick={() => setCartOpen(false)}>Alışverişe dön</button>
-                </div>
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="cart-summary">
-                <div className="cart-calc-rows">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                    <span style={{ color: '#666', fontWeight: '500' }}>Ara toplam</span>
-                    <strong style={{ color: '#1a2a47' }}>{fmt.format(rawSubtotalCents / 100)}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '1.2rem', borderBottom: '1px solid #eee' }}>
-                    <span style={{ color: '#666', fontWeight: '500' }}>Kargo</span>
-                    <strong style={{ color: '#1a2a47' }}>{shippingFee === 0 ? 'Ücretsiz' : fmt.format(shippingFee / 100)}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                    <span style={{ color: '#1a2a47' }}>Toplam</span>
-                    <strong style={{ color: '#1a2a47' }}>{fmt.format(finalTotalCents / 100)}</strong>
-                  </div>
-                </div>
-
-                <a style={{ display: 'block', backgroundColor: '#1a2a47', color: '#fff', textAlign: 'center', padding: '1rem', fontWeight: 'bold', textDecoration: 'none', letterSpacing: '0.5px' }} href="/sepetim">
-                  SATIN AL →
-                </a>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
 
       {whatsappLink && (
         <a className="floating-whatsapp" href={whatsappLink} target="_blank" rel="noreferrer" aria-label="WhatsApp Destek Hattı">

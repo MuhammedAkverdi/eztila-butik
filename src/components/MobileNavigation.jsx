@@ -26,15 +26,6 @@ function HeartIcon() {
   );
 }
 
-function BagIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 8h12l1 13H5L6 8Z" />
-      <path d="M9 9V6a3 3 0 0 1 6 0v3" />
-    </svg>
-  );
-}
-
 function countLabel(value) {
   const count = Number(value) || 0;
   return count > 99 ? '99+' : String(count);
@@ -42,13 +33,11 @@ function countLabel(value) {
 
 export default function MobileNavigation({
   categories,
-  cartCount = 0,
   favoriteCount = 0,
   accountHref = '/hesabim',
   accountLabel = 'Hesabım',
   onCategorySelect,
   onSearch,
-  onCartOpen,
   onSignOut,
   whatsappUrl,
 }) {
@@ -135,17 +124,6 @@ export default function MobileNavigation({
           <HeartIcon />
           {favoriteCount > 0 ? <b>{countLabel(favoriteCount)}</b> : null}
         </a>
-        {onCartOpen ? (
-          <button type="button" onClick={onCartOpen} aria-label={`Sepetim, ${cartCount} ürün`}>
-            <BagIcon />
-            {cartCount > 0 ? <b>{countLabel(cartCount)}</b> : null}
-          </button>
-        ) : (
-          <a href="/sepetim" aria-label={`Sepetim, ${cartCount} ürün`}>
-            <BagIcon />
-            {cartCount > 0 ? <b>{countLabel(cartCount)}</b> : null}
-          </a>
-        )}
       </div>
 
       {open ? (
@@ -179,7 +157,6 @@ export default function MobileNavigation({
                 </div>
               ) : null}
               <a href={accountHref} onClick={closeMenu}>{accountLabel}</a>
-              <a href="/siparis-takip" onClick={closeMenu}>Sipariş Takip</a>
               {menuWhatsappUrl ? <a href={menuWhatsappUrl} target="_blank" rel="noreferrer" onClick={closeMenu}>WhatsApp Destek</a> : null}
               {onSignOut ? <button type="button" className="mobile-nav-signout" onClick={() => { closeMenu(); onSignOut(); }}>Çıkış Yap</button> : null}
             </nav>

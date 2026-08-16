@@ -14,11 +14,11 @@ const LEGAL_DOCS = {
       },
       {
         title: '2. İşlenen Kişisel Veriler ve Amaçları',
-        content: 'Adınız, soyadınız, teslimat adresiniz, telefon numaranız ve e-posta adresiniz; siparişlerin teslimatı, faturalandırma ve müşteri memnuniyeti süreçlerinin yürütülmesi amacıyla işlenmektedir.',
+        content: 'Adınız, soyadınız, telefon numaranız ve e-posta adresiniz; üyelik, iletişim ve müşteri destek süreçlerinin yürütülmesi amacıyla işlenmektedir.',
       },
       {
         title: '3. Veri Güvenliği',
-        content: 'Kredi kartı bilgileriniz hiçbir surette sistemlerimizde saklanmamakta olup, ödemeler BDDK lisanslı güvenli ödeme altyapıları üzerinden 256-bit SSL korumasıyla gerçekleşmektedir.',
+        content: 'Eztila Butik web sitesi ödeme almaz ve kart bilgisi işlemez. Satın alma işlemleri yönlendirildiğiniz satış kanalının kendi güvenlik ve gizlilik koşullarına tabidir.',
       },
     ],
   },
@@ -37,7 +37,7 @@ const LEGAL_DOCS = {
       },
       {
         title: '3. Gizlilik ve Güvenlik',
-        content: 'Üyenin hesap şifresinin güvenliği bizzat üyeye aittir. Eztila Butik hesap verilerini yalnız sipariş ve kullanıcı deneyimi için kullanır.',
+        content: 'Üyenin hesap şifresinin güvenliği bizzat üyeye aittir. Eztila Butik hesap verilerini yalnız üyelik ve kullanıcı deneyimi için kullanır.',
       },
     ],
   },
@@ -63,11 +63,11 @@ const LEGAL_DOCS = {
     sections: [
       {
         title: '1. Konu',
-        content: 'İşbu Sözleşme’nin konusu, Alıcı’nın Satıcı’ya ait internet sitesinden elektronik ortamda siparişini yaptığı ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun hükümleridir.',
+        content: 'Eztila Butik web sitesi ürünleri tanıtır; satın alma işlemleri yönlendirilen satış kanalı üzerinden tamamlanır ve ilgili kanalın sözleşme ve tüketici koşullarına tabidir.',
       },
       {
         title: '2. Teslimat Koşulları',
-        content: 'Siparişler anlaşmalı kargo firmaları aracılığıyla 1-3 iş günü içerisinde kargoya teslim edilir.',
+        content: 'Teslimat ve kargo koşulları, satın alma işleminin tamamlandığı satış kanalında gösterilen güncel bilgilere tabidir.',
       },
     ],
   },
@@ -106,7 +106,7 @@ export default function LegalPage() {
       <section className="legal-hero">
         <p className="eyebrow">{doc.eyebrow}</p>
         <h1>{doc.title}</h1>
-        <span>Eztila Butik şeffaf, güvenli ve kullanıcı odaklı alışveriş deneyimi sunar.</span>
+        <span>Eztila Butik şeffaf ve kullanıcı odaklı bir ürün keşif deneyimi sunar.</span>
         <small>Son Güncelleme: {doc.date}</small>
       </section>
 
